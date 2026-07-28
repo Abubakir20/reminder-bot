@@ -4,8 +4,8 @@
   "description": "Professional Telegram Rreminder Bot",
   "main": "dist/sever.js",
   "scripts": {
-    "start": "node dist/server.js",
-    "dev": "tsx watch src/sever.ts",
+    "start": "node dist/server.ts",
+    "dev": "tsx watch src/server.ts",
     "build": "tsc"
   },
   "type": "module",
