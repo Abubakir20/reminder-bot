@@ -1,9 +1,25 @@
 import { Bot } from 'grammy';
 import { updateUserLanguage } from '../../modules/user/user.service.js';
 import { getTranslations } from '../../locales/index.js';
-import { extractLanguageCode } from '../../shared/keyboards/language.keyboard.js';
+import {
+  createLanguageKeyboard,
+  extractLanguageCode,
+} from '../../shared/keyboards/language.keyboard.js';
 
 export const registerLanguageHandler = (bot: Bot): void => {
+  bot.command('language', async (ctx) => {
+    try {
+      const t = getTranslations(ctx.from?.language_code);
+      await ctx.reply(t.language.select, {
+        reply_markup: createLanguageKeyboard(),
+      });
+    } catch (error) {
+      console.error('[Language Command Error]:', error);
+      const t = getTranslations('en');
+      await ctx.reply(t.errors.unknown);
+    }
+  });
+
   bot.on('callback_query:data', async (ctx, next) => {
     const callbackData = ctx.callbackQuery.data;
     const langCode = extractLanguageCode(callbackData);

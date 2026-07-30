@@ -3,10 +3,10 @@ import { Translations } from "../shared/types/translation.js";
 export const ru: Translations = {
   start: {
     welcome: (name: string) =>
-      `👋 Добро пожаловать, ${name}!\n\nЯ Smart Reminder Bot 🤖`,
+      `👋 Добро пожаловать, ${name}!\n\nЯ Smart Reminder Bot 🤖\n\nℹ️ Введите /help, чтобы увидеть все команды.`,
 
     welcomeBack: (name: string) =>
-      `👋 С возвращением, ${name}!`,
+      `👋 С возвращением, ${name}!\n\nℹ️ Введите /help, чтобы увидеть все команды.`,
   },
 
   language: {

@@ -2,12 +2,14 @@ import { Bot, GrammyError, HttpError } from 'grammy';
 import { env } from '../config/env.js';
 
 import { registerStartHandler } from './handlers/start.handler.js';
+import { registerHelpHandler } from './handlers/help.handler.js';
 import { registerLanguageHandler } from './handlers/language.handler.js';
 
 export const bot = new Bot(env.TELEGRAM_BOT_TOKEN);
 
 // Register handlers
 registerStartHandler(bot);
+registerHelpHandler(bot);
 registerLanguageHandler(bot);
 
 // Global Error Handler

@@ -7,12 +7,16 @@ export const uz: Translations = {
 
 Men Smart Reminder Botman 🤖
 
-Sizga kerakli narsalarni o'z vaqtida eslatib turaman.`,
+Sizga kerakli narsalarni o'z vaqtida eslatib turaman.
+
+ℹ️ Barcha buyruqlarni ko'rish uchun /help ni yuboring.`,
 
     welcomeBack: (name: string) =>
       `👋 Qaytganingiz bilan ${name}!
 
-Yangi eslatmalar yaratishga tayyorman 😊`,
+Yangi eslatmalar yaratishga tayyorman 😊
+
+ℹ️ Barcha buyruqlarni ko'rish uchun /help ni yuboring.`,
   },
 
   language: {

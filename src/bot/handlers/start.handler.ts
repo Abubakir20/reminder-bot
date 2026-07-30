@@ -20,13 +20,14 @@ export const registerStartHandler = (bot: Bot): void => {
         telegramId,
         username,
         fullName,
+        languageCode: ctx.from.language_code,
         // Language remains undefined here until explicitly set via inline keyboard
       });
 
       // 1. User has no explicitly selected language yet
       if (!user.language) {
         // Fallback to Telegram's default language code to ask for selection
-        const t = getTranslations();
+        const t = getTranslations(ctx.from.language_code);
         
         await ctx.reply(t.language.select, {
           reply_markup: createLanguageKeyboard(),

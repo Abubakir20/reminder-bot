@@ -15,14 +15,29 @@ export const createUser = async (data: CreateUserDto): Promise<UserDocument> => 
 export const findOrCreateUser = async (
   data: CreateUserDto
 ): Promise<{ user: UserDocument; isNew: boolean }> => {
-  let user = await findUserByTelegramId(data.telegramId);
+  const result = await UserModel.findOneAndUpdate(
+    { telegramId: data.telegramId },
+    {
+      $set: {
+        username: data.username,
+        fullName: data.fullName,
+        languageCode: data.languageCode,
+      },
+      $setOnInsert: {
+        telegramId: data.telegramId,
+      },
+    },
+    {
+      upsert: true,
+      returnDocument: 'after',
+      includeResultMetadata: true,
+    }
+  ).exec();
 
-  if (user) {
-    return { user, isNew: false };
-  }
-
-  user = await createUser(data);
-  return { user, isNew: true };
+  return {
+    user: result.value as UserDocument,
+    isNew: !result.lastErrorObject?.updatedExisting,
+  };
 };
 
 export const updateUserLanguage = async (

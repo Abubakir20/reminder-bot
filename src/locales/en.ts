@@ -7,12 +7,16 @@ export const en: Translations = {
 
 I am Smart Reminder Bot 🤖
 
-I will remind you about your important tasks on time.`,
+I will remind you about your important tasks on time.
+
+ℹ️ Type /help to see all commands.`,
 
     welcomeBack: (name: string) =>
       `👋 Welcome back ${name}!
 
-Ready to create new reminders? 😊`,
+Ready to create new reminders? 😊
+
+ℹ️ Type /help to see all commands.`,
   },
 
   language: {
