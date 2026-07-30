@@ -19,6 +19,7 @@ export interface Translations {
 
   errors: {
     unknown: string;
+    notRegistered: string;
   };
 
   reminder: {
@@ -26,5 +27,17 @@ export interface Translations {
     updated: string;
     deleted: string;
     cancelled: string;
+
+    needTime: string;
+    needDate: string;
+    notUnderstood: string;
+    ambiguous: (token: string, asTime: string, asDate: string) => string;
+    details: (title: string, time: string) => string;
+    repeatLabels: {
+      daily: string;
+      weekly: string;
+      monthly: string;
+      yearly: string;
+    };
   };
 }

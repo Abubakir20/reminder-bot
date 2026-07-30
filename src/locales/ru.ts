@@ -24,6 +24,7 @@ export const ru: Translations = {
 
   errors: {
     unknown: "❌ Произошла ошибка. Попробуйте позже.",
+    notRegistered: "⚠️ Сначала отправьте /start для регистрации.",
   },
 
   reminder: {
@@ -31,5 +32,18 @@ export const ru: Translations = {
     updated: "✅ Напоминание обновлено.",
     deleted: "🗑 Напоминание удалено.",
     cancelled: "🚫 Напоминание отменено.",
+
+    needTime: "🕐 Уточните время, например: «завтра в 18:00» или «через 2 часа».",
+    needDate: "🗓 Поняла время, но не дату. Попробуйте так: «9-е августа», «01.08» или «завтра».",
+    notUnderstood: "🤔 Не поняла. Попробуйте так: «завтра в 18:00 купить лекарство».",
+    ambiguous: (token: string, asTime: string, asDate: string) =>
+      `🤔 Не поняла, «${token}» — это время или дата? Вы имели в виду ${asTime} (время) или ${asDate} (дату)?`,
+    details: (title: string, time: string) => `✅ Напоминание установлено: «${title}» на ${time}.`,
+    repeatLabels: {
+      daily: "🔁 Повторяется ежедневно",
+      weekly: "🔁 Повторяется еженедельно",
+      monthly: "🔁 Повторяется ежемесячно",
+      yearly: "🔁 Повторяется ежегодно",
+    },
   },
 };

@@ -34,6 +34,7 @@ Ready to create new reminders? 😊
 
   errors: {
     unknown: "❌ Something went wrong. Please try again later.",
+    notRegistered: "⚠️ Please send /start first to register.",
   },
 
   reminder: {
@@ -41,5 +42,18 @@ Ready to create new reminders? 😊
     updated: "✏️ Reminder updated.",
     deleted: "🗑 Reminder deleted.",
     cancelled: "🚫 Reminder cancelled.",
+
+    needTime: "🕐 Please specify a time, e.g. \"tomorrow 18:00\" or \"in 2 hours\".",
+    needDate: "🗓 I got the time, but not the date. Try formats like \"9th August\", \"01.08\", or \"tomorrow\".",
+    notUnderstood: "🤔 I didn't understand that. Try something like \"tomorrow 18:00 buy medicine\".",
+    ambiguous: (token: string, asTime: string, asDate: string) =>
+      `🤔 Not sure if "${token}" is a time or a date. Did you mean ${asTime} (time) or ${asDate} (date)?`,
+    details: (title: string, time: string) => `✅ Reminder set: "${title}" at ${time}.`,
+    repeatLabels: {
+      daily: "🔁 Repeats daily",
+      weekly: "🔁 Repeats weekly",
+      monthly: "🔁 Repeats monthly",
+      yearly: "🔁 Repeats yearly",
+    },
   },
 };

@@ -13,4 +13,8 @@ export interface ParsedReminder {
     confidence: number;
 
     originalText: string;
+
+    ambiguousToken?: string;
+
+    unclear?: 'time' | 'date' | 'ambiguous';
 }

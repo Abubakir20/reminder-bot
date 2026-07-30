@@ -34,6 +34,7 @@ Yangi eslatmalar yaratishga tayyorman 😊
 
   errors: {
     unknown: "❌ Xatolik yuz berdi. Keyinroq qayta urinib ko'ring.",
+    notRegistered: "⚠️ Avval ro'yxatdan o'tish uchun /start yuboring.",
   },
 
   reminder: {
@@ -41,5 +42,18 @@ Yangi eslatmalar yaratishga tayyorman 😊
     updated: "✏️ Eslatma yangilandi.",
     deleted: "🗑 Eslatma o'chirildi.",
     cancelled: "🚫 Eslatma bekor qilindi.",
+
+    needTime: "🕐 Iltimos, vaqtni ko'rsating, masalan: \"ertaga 18:00\" yoki \"2 soatdan keyin\".",
+    needDate: "🗓 Vaqtni tushundim, lekin sanani tushunmadim. Masalan: \"9-avgust\", \"01.08\" yoki \"ertaga\" deb yozing.",
+    notUnderstood: "🤔 Tushunmadim. Masalan: \"ertaga 18:00 da dori ichish\" deb yozing.",
+    ambiguous: (token: string, asTime: string, asDate: string) =>
+      `🤔 "${token}" vaqtmi yoki sanami, tushunmadim. ${asTime} (vaqt) yoki ${asDate} (sana) nazarda tutgandingizmi?`,
+    details: (title: string, time: string) => `✅ Eslatma o'rnatildi: "${title}" — ${time}.`,
+    repeatLabels: {
+      daily: "🔁 Har kuni takrorlanadi",
+      weekly: "🔁 Har hafta takrorlanadi",
+      monthly: "🔁 Har oy takrorlanadi",
+      yearly: "🔁 Har yili takrorlanadi",
+    },
   },
 };

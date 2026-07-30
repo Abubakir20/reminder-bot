@@ -1252,3 +1252,5 @@ Current state
 user, locales, /start and language choosing are ready!
 
 reminder.handler, scheduler notification is empty!
+
+Parser conventions
