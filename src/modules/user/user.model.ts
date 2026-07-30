@@ -15,7 +15,7 @@ const userSchema = new Schema<IUser>(
       type: String,
     },
 
-    firstName: {
+    fullName: {
       type: String,
     },
 

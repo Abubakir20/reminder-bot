@@ -32,6 +32,6 @@ export const updateUserLanguage = async (
   return UserModel.findOneAndUpdate(
     { telegramId },
     { language },
-    { new: true }
+    { returnDocument: 'after' }
   ).exec();
 };

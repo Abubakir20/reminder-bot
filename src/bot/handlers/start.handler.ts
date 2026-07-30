@@ -11,7 +11,7 @@ export const registerStartHandler = (bot: Bot): void => {
     const { 
       id: telegramId, 
       username, 
-      first_name: firstName 
+      first_name: fullName 
     } = ctx.from;
 
     try {
@@ -19,7 +19,7 @@ export const registerStartHandler = (bot: Bot): void => {
       const { user, isNew } = await findOrCreateUser({
         telegramId,
         username,
-        firstName,
+        fullName,
         // Language remains undefined here until explicitly set via inline keyboard
       });
 
@@ -37,7 +37,7 @@ export const registerStartHandler = (bot: Bot): void => {
       // 2. User already has a language selected
       const t = getTranslations(user.language);
       
-      const displayName = firstName ?? username ?? "User";
+      const displayName = fullName ?? username ?? "User";
 
       // Select the appropriate welcome message
       const welcomeMessage = isNew 

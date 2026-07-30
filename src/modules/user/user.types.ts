@@ -4,7 +4,7 @@ import { LanguageCode } from "../../shared/types/translation.js";
 export interface IUser {
   telegramId: number;
   username?: string;
-  firstName?: string;
+  fullName?: string;
   languageCode?: string;
 
   language?: LanguageCode;
@@ -15,7 +15,7 @@ export interface IUser {
 export interface CreateUserDto {
   telegramId: number;
   username?: string;
-  firstName?: string;
+  fullName?: string;
   languageCode?: string;
 
   language?: LanguageCode;
