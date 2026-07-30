@@ -8,7 +8,6 @@ const userSchema = new Schema<IUser>(
       type: Number,
       required: true,
       unique: true,
-      index: true,
     },
 
     username: {
@@ -26,7 +25,6 @@ const userSchema = new Schema<IUser>(
     language: {
       type: String,
       enum: SUPPORTED_LANGUAGES,
-      default: null,
     },
 
     timezone: {

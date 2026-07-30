@@ -25,7 +25,7 @@ export const getUserReminders = async (
     userId,
     status: ReminderStatus.ACTIVE,
   }).sort({
-    reminderTime: 1,
+    remindAt: 1,
   });
 };
 

@@ -2,9 +2,9 @@
   "name": "reminder-bot",
   "version": "1.0.0",
   "description": "Professional Telegram Rreminder Bot",
-  "main": "dist/sever.js",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node dist/server.ts",
+    "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
     "build": "tsc"
   },

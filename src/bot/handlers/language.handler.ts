@@ -37,12 +37,9 @@ export const registerLanguageHandler = (bot: Bot): void => {
     } catch (error) {
       console.error('[Language Handler Error]:', error);
       
-      // Provide a safe fallback error message via an alert
+      // Provide a safe fallback error message
       const t = getTranslations('en'); // Safe fallback
-      await ctx.answerCallbackQuery({
-        text: t.errors.unknown,
-        show_alert: true,
-      });
+      await ctx.reply(t.errors.unknown);
     }
   });
 };
