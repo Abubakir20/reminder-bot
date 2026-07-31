@@ -32,12 +32,18 @@ export interface Translations {
     needDate: string;
     notUnderstood: string;
     ambiguous: (token: string, asTime: string, asDate: string) => string;
-    details: (title: string, time: string) => string;
+    details: (title: string, time: string, leadMinutes: number) => string;
     repeatLabels: {
       daily: string;
       weekly: string;
       monthly: string;
       yearly: string;
     };
+  };
+
+  notification: {
+    advance: (title: string, time: string, minutesLeft: number) => string;
+    due: (title: string) => string;
+    overdue: (title: string, time: string) => string;
   };
 }

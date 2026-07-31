@@ -1,5 +1,16 @@
 import { Translations } from "../shared/types/translation.js";
 
+const humanizeMinutes = (total: number): string => {
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+  const parts: string[] = [];
+
+  if (hours > 0) parts.push(hours === 1 ? "an hour" : `${hours} hours`);
+  if (minutes > 0) parts.push(`${minutes} minute${minutes === 1 ? "" : "s"}`);
+
+  return parts.length > 0 ? parts.join(" ") : "0 minutes";
+};
+
 export const en: Translations = {
   start: {
     welcome: (name: string) =>
@@ -48,12 +59,21 @@ Ready to create new reminders? 😊
     notUnderstood: "🤔 I didn't understand that. Try something like \"tomorrow 18:00 buy medicine\".",
     ambiguous: (token: string, asTime: string, asDate: string) =>
       `🤔 Not sure if "${token}" is a time or a date. Did you mean ${asTime} (time) or ${asDate} (date)?`,
-    details: (title: string, time: string) => `✅ Reminder set: "${title}" at ${time}.`,
+    details: (title: string, time: string, leadMinutes: number) =>
+      `✅ Reminder set: "${title}" at ${time}. I'll remind you ${humanizeMinutes(leadMinutes)} before.`,
     repeatLabels: {
       daily: "🔁 Repeats daily",
       weekly: "🔁 Repeats weekly",
       monthly: "🔁 Repeats monthly",
       yearly: "🔁 Repeats yearly",
     },
+  },
+
+  notification: {
+    advance: (title: string, time: string, minutesLeft: number) =>
+      `⏰ Reminder: "${title}" at ${time} — ${humanizeMinutes(minutesLeft)} left.`,
+    due: (title: string) => `🔔 Time's up: "${title}".`,
+    overdue: (title: string, time: string) =>
+      `⏰ You were supposed to "${title}" at ${time} — this is a late reminder.`,
   },
 };

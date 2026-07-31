@@ -1,5 +1,31 @@
 import { Translations } from "../shared/types/translation.js";
 
+const pluralizeRu = (n: number, one: string, few: string, many: string): string => {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+  return many;
+};
+
+const humanizeMinutes = (total: number): string => {
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+  const parts: string[] = [];
+
+  if (hours > 0) {
+    parts.push(
+      hours === 1 && minutes === 0 ? "час" : `${hours} ${pluralizeRu(hours, "час", "часа", "часов")}`,
+    );
+  }
+  if (minutes > 0) {
+    parts.push(`${minutes} ${pluralizeRu(minutes, "минуту", "минуты", "минут")}`);
+  }
+
+  return parts.length > 0 ? parts.join(" ") : "0 минут";
+};
+
 export const ru: Translations = {
   start: {
     welcome: (name: string) =>
@@ -38,12 +64,21 @@ export const ru: Translations = {
     notUnderstood: "🤔 Не поняла. Попробуйте так: «завтра в 18:00 купить лекарство».",
     ambiguous: (token: string, asTime: string, asDate: string) =>
       `🤔 Не поняла, «${token}» — это время или дата? Вы имели в виду ${asTime} (время) или ${asDate} (дату)?`,
-    details: (title: string, time: string) => `✅ Напоминание установлено: «${title}» на ${time}.`,
+    details: (title: string, time: string, leadMinutes: number) =>
+      `✅ Напоминание установлено: «${title}» на ${time}. Предупрежу за ${humanizeMinutes(leadMinutes)} до срока.`,
     repeatLabels: {
       daily: "🔁 Повторяется ежедневно",
       weekly: "🔁 Повторяется еженедельно",
       monthly: "🔁 Повторяется ежемесячно",
       yearly: "🔁 Повторяется ежегодно",
     },
+  },
+
+  notification: {
+    advance: (title: string, time: string, minutesLeft: number) =>
+      `⏰ Напоминание: «${title}» в ${time} — осталось ${humanizeMinutes(minutesLeft)}.`,
+    due: (title: string) => `🔔 Время пришло: «${title}».`,
+    overdue: (title: string, time: string) =>
+      `⏰ Вы собирались «${title}» в ${time} — напоминание с опозданием.`,
   },
 };

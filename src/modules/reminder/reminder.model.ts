@@ -81,6 +81,8 @@ const reminderSchema = new Schema<IReminder>(
   },
 );
 
+reminderSchema.index({ status: 1, nextRunAt: 1 });
+
 export const ReminderModel = mongoose.model<IReminder>(
   "Reminder",
   reminderSchema,

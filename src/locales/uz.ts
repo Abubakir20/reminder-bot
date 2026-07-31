@@ -1,5 +1,16 @@
 import { Translations } from "../shared/types/translation.js";
 
+const humanizeMinutes = (total: number): string => {
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+  const parts: string[] = [];
+
+  if (hours > 0) parts.push(`${hours} soat`);
+  if (minutes > 0) parts.push(`${minutes} daqiqa`);
+
+  return parts.length > 0 ? parts.join(" ") : "0 daqiqa";
+};
+
 export const uz: Translations = {
   start: {
     welcome: (name: string) =>
@@ -48,12 +59,21 @@ Yangi eslatmalar yaratishga tayyorman 😊
     notUnderstood: "🤔 Tushunmadim. Masalan: \"ertaga 18:00 da dori ichish\" deb yozing.",
     ambiguous: (token: string, asTime: string, asDate: string) =>
       `🤔 "${token}" vaqtmi yoki sanami, tushunmadim. ${asTime} (vaqt) yoki ${asDate} (sana) nazarda tutgandingizmi?`,
-    details: (title: string, time: string) => `✅ Eslatma o'rnatildi: "${title}" — ${time}.`,
+    details: (title: string, time: string, leadMinutes: number) =>
+      `✅ Eslatma o'rnatildi: "${title}" — ${time}. ${humanizeMinutes(leadMinutes)} oldin ogohlantiraman.`,
     repeatLabels: {
       daily: "🔁 Har kuni takrorlanadi",
       weekly: "🔁 Har hafta takrorlanadi",
       monthly: "🔁 Har oy takrorlanadi",
       yearly: "🔁 Har yili takrorlanadi",
     },
+  },
+
+  notification: {
+    advance: (title: string, time: string, minutesLeft: number) =>
+      `⏰ Eslatma: "${title}" — ${time}, ${humanizeMinutes(minutesLeft)} qoldi.`,
+    due: (title: string) => `🔔 Vaqt keldi: "${title}".`,
+    overdue: (title: string, time: string) =>
+      `⏰ Siz "${title}" ni ${time} da bajarishingiz kerak edi — bu kechikkan eslatma.`,
   },
 };

@@ -58,10 +58,12 @@ export const registerReminderHandler = (bot: Bot): void => {
             originalText: parsed.originalText,
             remindAt: parsed.remindAt,
             repeat: parsed.repeat,
+            remindBefore: parsed.remindBefore,
+            timezone: user.timezone,
           });
 
           const time = formatReminderTime(parsed.remindAt, user.timezone, user.language ?? 'uz');
-          let reply = t.reminder.details(parsed.title, time);
+          let reply = t.reminder.details(parsed.title, time, parsed.remindBefore[0]);
 
           const labelKey = REPEAT_LABEL_KEY[parsed.repeat];
           if (labelKey) {

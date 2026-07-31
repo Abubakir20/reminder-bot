@@ -23,6 +23,11 @@ interface RelativeMatch {
   range: MatchRange;
 }
 
+interface RemindBeforeMatch {
+  minutes: number;
+  range: MatchRange;
+}
+
 interface RepeatMatch {
   repeat: ReminderRepeatType;
   range: MatchRange;
@@ -142,6 +147,58 @@ const matchRelativeTime = (text: string): RelativeMatch | null => {
 
   return null;
 };
+
+// "Oldin"/"до"/"before" mark a lead-time (warn N before the deadline), as
+// opposed to "keyin"/"через"/"in" which mark the deadline itself. These are
+// checked (and masked) before matchRelativeTime so "2 soat oldin" can never
+// be misread as "2 soatdan keyin" losing the "oldin" and leaking into remindAt.
+const UZ_REMIND_BEFORE_HOURS_REGEX = bounded('(?:(\\d+)\\s*)?soat\\s+oldin');
+const UZ_REMIND_BEFORE_MINUTES_REGEX = bounded('(\\d+)\\s*daqiqa\\s+oldin');
+const RU_REMIND_BEFORE_HOURS_REGEX = bounded(
+  "(?:предупреди\\s+)?за\\s+(?:(\\d+)\\s*)?час(?:а|ов)?(?:\\s+до)?",
+);
+const RU_REMIND_BEFORE_MINUTES_REGEX = bounded(
+  "(?:предупреди\\s+)?за\\s+(\\d+)\\s*минут(?:у|ы)?(?:\\s+до)?",
+);
+const EN_REMIND_BEFORE_HOURS_REGEX = bounded(
+  "(?:remind\\s+me\\s+)?(?:(\\d+)\\s*)?hours?\\s+before",
+);
+const EN_REMIND_BEFORE_MINUTES_REGEX = bounded(
+  "(?:remind\\s+me\\s+)?(\\d+)\\s*minutes?\\s+before",
+);
+
+const matchRemindBefore = (text: string): RemindBeforeMatch | null => {
+  const hourMatches = [
+    UZ_REMIND_BEFORE_HOURS_REGEX,
+    RU_REMIND_BEFORE_HOURS_REGEX,
+    EN_REMIND_BEFORE_HOURS_REGEX,
+  ];
+  for (const regex of hourMatches) {
+    const match = regex.exec(text);
+    if (match) {
+      const amount = match[1] ? Number(match[1]) : 1;
+      return { minutes: amount * 60, range: toRange(match) };
+    }
+  }
+
+  const minuteMatches = [
+    UZ_REMIND_BEFORE_MINUTES_REGEX,
+    RU_REMIND_BEFORE_MINUTES_REGEX,
+    EN_REMIND_BEFORE_MINUTES_REGEX,
+  ];
+  for (const regex of minuteMatches) {
+    const match = regex.exec(text);
+    if (match) {
+      return { minutes: Number(match[1]), range: toRange(match) };
+    }
+  }
+
+  return null;
+};
+
+const REMIND_BEFORE_MIN_MINUTES = 1;
+const REMIND_BEFORE_MAX_MINUTES = 10080; // 7 days
+const DEFAULT_REMIND_BEFORE = [60];
 
 const REPEAT_MARKERS: Array<{ regex: RegExp; repeat: ReminderRepeatType }> = [
   {
@@ -529,6 +586,13 @@ export const parse = (
     ? maskRange(workingText, clockMatchFromKeywords.range)
     : workingText;
 
+  // Lead-time ("2 soat oldin") is masked before matchRelativeTime runs, so
+  // "2 soat oldin" can never be mistaken for the start of "2 soatdan keyin".
+  const remindBeforeMatch = matchRemindBefore(workingText);
+  workingText = remindBeforeMatch
+    ? maskRange(workingText, remindBeforeMatch.range)
+    : workingText;
+
   const dayMatch = matchDayMarker(workingText);
   const relativeMatch = matchRelativeTime(workingText);
   const repeatMatch = matchRepeat(workingText);
@@ -605,6 +669,15 @@ export const parse = (
 
   const repeat = repeatMatch ? repeatMatch.repeat : ReminderRepeatType.NONE;
 
+  // Out-of-range lead-time is ignored (falls back to the default) but the
+  // expression is still cut from the title either way.
+  const remindBefore =
+    remindBeforeMatch &&
+    remindBeforeMatch.minutes >= REMIND_BEFORE_MIN_MINUTES &&
+    remindBeforeMatch.minutes <= REMIND_BEFORE_MAX_MINUTES
+      ? [remindBeforeMatch.minutes]
+      : DEFAULT_REMIND_BEFORE;
+
   const ranges = [
     calendarMatch?.range,
     dayMatch?.range,
@@ -612,6 +685,7 @@ export const parse = (
     relativeMatch?.range,
     repeatMatch?.range,
     ambiguousRange,
+    remindBeforeMatch?.range,
   ].filter((range): range is MatchRange => range != null);
 
   const title = extractTitle(text, ranges);
@@ -630,7 +704,7 @@ export const parse = (
     title,
     originalText: text,
     remindAt,
-    remindBefore: [60],
+    remindBefore,
     repeat,
     confidence,
     ambiguousToken,

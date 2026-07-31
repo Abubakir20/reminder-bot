@@ -1,7 +1,9 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import { connectDB } from './database/connection.js';
 import { env } from './config/env.js';
 import { bot } from './bot/index.js';
+import { startScheduler, stopScheduler } from './modules/scheduler/scheduler.service.js';
 
 const app = express();
 
@@ -24,12 +26,27 @@ const bootstrap = async () => {
   });
 
   // 3. Start Telegram Bot
+  // bot.start() blocks until long polling stops — anything meant to run
+  // right after startup must go in onStart, not after this await.
   await bot.start({
     onStart: (botInfo) => {
       console.log(`🤖 Bot @${botInfo.username} started successfully.`);
+      startScheduler(bot.api);
     },
   });
 };
+
+const shutdown = async (signal: string): Promise<void> => {
+  console.log(`\n${signal} received. Shutting down...`);
+  stopScheduler();
+  await bot.stop();
+  await mongoose.connection.close();
+  console.log('Shutdown complete.');
+  process.exit(0);
+};
+
+process.on('SIGINT', () => void shutdown('SIGINT'));
+process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
 bootstrap().catch((error) => {
   console.error('Failed to start application:', error);

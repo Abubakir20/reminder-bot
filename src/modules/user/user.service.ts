@@ -1,9 +1,14 @@
+import { Types } from 'mongoose';
 import { UserModel } from './user.model.js';
 import { CreateUserDto, UserDocument } from './user.types.js';
 import { LanguageCode } from "../../shared/types/translation.js";
 
 export const findUserByTelegramId = async (telegramId: number): Promise<UserDocument | null> => {
   return UserModel.findOne({ telegramId }).exec();
+};
+
+export const findUserById = async (id: Types.ObjectId): Promise<UserDocument | null> => {
+  return UserModel.findById(id).exec();
 };
 
 export const createUser = async (data: CreateUserDto): Promise<UserDocument> => {
