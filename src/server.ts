@@ -36,7 +36,14 @@ const bootstrap = async () => {
   });
 };
 
+let isShuttingDown = false;
+
 const shutdown = async (signal: string): Promise<void> => {
+  // A second signal (or SIGINT followed by SIGTERM) would otherwise run the
+  // teardown twice and throw on closing an already-closed mongoose connection.
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
   console.log(`\n${signal} received. Shutting down...`);
   stopScheduler();
   await bot.stop();

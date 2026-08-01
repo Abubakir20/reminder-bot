@@ -1,4 +1,4 @@
-import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { ApiError, GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { DateTime } from 'luxon';
 import { env } from '../../config/env.js';
 import { ReminderRepeatType } from '../reminder/reminder.types.js';
@@ -43,6 +43,26 @@ const RESPONSE_SCHEMA = {
 };
 
 const client = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+
+const QUOTA_EXCEEDED_STATUS = 429;
+const RETRY_INFO_TYPE = 'type.googleapis.com/google.rpc.RetryInfo';
+
+interface ApiErrorPayload {
+  error?: {
+    details?: Array<{ '@type'?: string; retryDelay?: string }>;
+  };
+}
+
+// The SDK packs the whole error payload into the message as JSON; the
+// retry hint lives in a RetryInfo entry inside its details array.
+const extractRetryDelay = (message: string): string | undefined => {
+  try {
+    const payload = JSON.parse(message) as ApiErrorPayload;
+    return payload.error?.details?.find((d) => d['@type'] === RETRY_INFO_TYPE)?.retryDelay;
+  } catch {
+    return undefined;
+  }
+};
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 // Accepts HH:mm and HH:mm:ss — the seconds variant is a format the model
@@ -175,6 +195,14 @@ export const parseWithGemini = async (
   } catch (error) {
     if (controller.signal.aborted) {
       console.error(`[AI] request timed out after ${REQUEST_TIMEOUT_MS}ms`);
+    } else if (error instanceof ApiError && error.status === QUOTA_EXCEEDED_STATUS) {
+      // Quota exhaustion is an expected operating condition, not a defect —
+      // one line, no stack trace.
+      const retryDelay = extractRetryDelay(error.message);
+      console.error(
+        `[AI] quota exceeded (429) for model ${env.GEMINI_MODEL}` +
+          (retryDelay ? `, retry after ${retryDelay}` : ''),
+      );
     } else {
       console.error('[AI] request failed:', error);
     }
