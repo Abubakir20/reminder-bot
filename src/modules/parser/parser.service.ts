@@ -122,12 +122,22 @@ const matchClockTime = (text: string): ClockMatch | null => {
   return null;
 };
 
-const UZ_HOURS_REGEX = bounded('(\\d+)\\s*soatdan\\s+keyin');
-const UZ_MINUTES_REGEX = bounded('(\\d+)\\s*daqiqadan\\s+keyin');
-const RU_HOURS_REGEX = bounded('через\\s+(\\d+)\\s*час(?:а|ов)?');
-const RU_MINUTES_REGEX = bounded('через\\s+(\\d+)\\s*минут(?:у|ы)?');
-const EN_HOURS_REGEX = bounded('in\\s+(\\d+)\\s*hours?');
-const EN_MINUTES_REGEX = bounded('in\\s+(\\d+)\\s*minutes?');
+// Unit spellings are shared between the "deadline" patterns below and the
+// "lead time" ones further down, so a synonym only has to be added once.
+// Longest spelling first so a shorter one can't win on a prefix.
+const UZ_HOUR_UNIT = '(?:soatlik|soat)';
+const UZ_MINUTE_UNIT = '(?:daqiqa|minutlik|minut|min|daq)';
+const RU_HOUR_UNIT = '(?:час(?:а|ов)?)';
+const RU_MINUTE_UNIT = '(?:минуту|минуты|минут|мин)';
+const EN_HOUR_UNIT = '(?:hours|hour|hrs|hr)';
+const EN_MINUTE_UNIT = '(?:minutes|minute|mins|min)';
+
+const UZ_HOURS_REGEX = bounded(`(\\d+)\\s*${UZ_HOUR_UNIT}dan\\s+keyin`);
+const UZ_MINUTES_REGEX = bounded(`(\\d+)\\s*${UZ_MINUTE_UNIT}dan\\s+keyin`);
+const RU_HOURS_REGEX = bounded(`через\\s+(\\d+)\\s*${RU_HOUR_UNIT}`);
+const RU_MINUTES_REGEX = bounded(`через\\s+(\\d+)\\s*${RU_MINUTE_UNIT}`);
+const EN_HOURS_REGEX = bounded(`in\\s+(\\d+)\\s*${EN_HOUR_UNIT}`);
+const EN_MINUTES_REGEX = bounded(`in\\s+(\\d+)\\s*${EN_MINUTE_UNIT}`);
 
 const matchRelativeTime = (text: string): RelativeMatch | null => {
   const hourMatches = [UZ_HOURS_REGEX, RU_HOURS_REGEX, EN_HOURS_REGEX];
@@ -153,19 +163,19 @@ const matchRelativeTime = (text: string): RelativeMatch | null => {
 // opposed to "keyin"/"через"/"in" which mark the deadline itself. These are
 // checked (and masked) before matchRelativeTime so "2 soat oldin" can never
 // be misread as "2 soatdan keyin" losing the "oldin" and leaking into remindAt.
-const UZ_REMIND_BEFORE_HOURS_REGEX = bounded('(?:(\\d+)\\s*)?soat\\s+oldin');
-const UZ_REMIND_BEFORE_MINUTES_REGEX = bounded('(\\d+)\\s*daqiqa\\s+oldin');
+const UZ_REMIND_BEFORE_HOURS_REGEX = bounded(`(?:(\\d+)\\s*)?${UZ_HOUR_UNIT}\\s+oldin`);
+const UZ_REMIND_BEFORE_MINUTES_REGEX = bounded(`(\\d+)\\s*${UZ_MINUTE_UNIT}\\s+oldin`);
 const RU_REMIND_BEFORE_HOURS_REGEX = bounded(
-  "(?:предупреди\\s+)?за\\s+(?:(\\d+)\\s*)?час(?:а|ов)?(?:\\s+до)?",
+  `(?:предупреди\\s+)?за\\s+(?:(\\d+)\\s*)?${RU_HOUR_UNIT}(?:\\s+до)?`,
 );
 const RU_REMIND_BEFORE_MINUTES_REGEX = bounded(
-  "(?:предупреди\\s+)?за\\s+(\\d+)\\s*минут(?:у|ы)?(?:\\s+до)?",
+  `(?:предупреди\\s+)?за\\s+(\\d+)\\s*${RU_MINUTE_UNIT}(?:\\s+до)?`,
 );
 const EN_REMIND_BEFORE_HOURS_REGEX = bounded(
-  "(?:remind\\s+me\\s+)?(?:(\\d+)\\s*)?hours?\\s+before",
+  `(?:remind\\s+me\\s+)?(?:(\\d+)\\s*)?${EN_HOUR_UNIT}\\s+before`,
 );
 const EN_REMIND_BEFORE_MINUTES_REGEX = bounded(
-  "(?:remind\\s+me\\s+)?(\\d+)\\s*minutes?\\s+before",
+  `(?:remind\\s+me\\s+)?(\\d+)\\s*${EN_MINUTE_UNIT}\\s+before`,
 );
 
 const matchRemindBefore = (text: string): RemindBeforeMatch | null => {
@@ -201,18 +211,32 @@ const REMIND_BEFORE_MIN_MINUTES = 1;
 const REMIND_BEFORE_MAX_MINUTES = 10080; // 7 days
 const DEFAULT_REMIND_BEFORE = [60];
 
+// Each period carries the same four shapes in every language: "har X",
+// "каждый X", the single-word adverb, and "every/each X".
 const REPEAT_MARKERS: Array<{ regex: RegExp; repeat: ReminderRepeatType }> = [
   {
-    regex: bounded('(?:har\\s+kuni|каждый\\s+день|ежедневно|every\\s+day)'),
+    regex: bounded(
+      '(?:har\\s+kuni|каждый\\s+день|ежедневно|(?:every|each)\\s+day|daily)',
+    ),
     repeat: ReminderRepeatType.DAILY,
   },
   {
-    regex: bounded('(?:har\\s+hafta|каждую\\s+неделю|weekly)'),
+    regex: bounded(
+      '(?:har\\s+hafta|каждую\\s+неделю|еженедельно|(?:every|each)\\s+week|weekly)',
+    ),
     repeat: ReminderRepeatType.WEEKLY,
   },
   {
-    regex: bounded('(?:har\\s+oy|каждый\\s+месяц|monthly)'),
+    regex: bounded(
+      '(?:har\\s+oy|каждый\\s+месяц|ежемесячно|(?:every|each)\\s+month|monthly)',
+    ),
     repeat: ReminderRepeatType.MONTHLY,
+  },
+  {
+    regex: bounded(
+      '(?:har\\s+yili|каждый\\s+год|ежегодно|(?:every|each)\\s+year|annually|yearly)',
+    ),
+    repeat: ReminderRepeatType.YEARLY,
   },
 ];
 
@@ -439,22 +463,53 @@ const LEADING_PREPOSITION_REGEX = new RegExp(
 const TRAILING_EDGE_PUNCTUATION_REGEX = /[\s,.\-:]+$/;
 const LEADING_EDGE_PUNCTUATION_REGEX = /^[\s,.\-:]+/;
 
-// Command verbs ("remind me") aren't part of the task itself — only stripped
-// from the end of the title, never from the middle of a sentence.
+// "Remind me" isn't part of the task. The verb is not always last —
+// "eslat menga" puts a pronoun after it — so the verb and an adjacent
+// pronoun are removed as one cluster wherever they appear.
 const COMMAND_VERB_ALTERNATION = [
   "eslatib\\s+qo'ying",
   "eslatib\\s+qo'y",
+  'eslatgin',
   'eslat',
   'напомнить',
   'напоминай',
   'напомни',
-  'remind\\s+me',
   'remind',
 ].join('|');
+// Only stripped when adjacent to an imperative; standalone ones are handled
+// by the edge rules below.
+const OBJECT_PRONOUN_ALTERNATION = ['menga', 'мне', 'me'].join('|');
+
+// Verb bound to a pronoun is unambiguously "remind me" phrasing, so it can
+// go from anywhere in the sentence.
+const COMMAND_CLUSTER_REGEX = new RegExp(
+  `${BOUNDARY_BEFORE}(?:` +
+    `(?:${COMMAND_VERB_ALTERNATION})\\s+(?:${OBJECT_PRONOUN_ALTERNATION})` +
+    `|(?:${OBJECT_PRONOUN_ALTERNATION})\\s+(?:${COMMAND_VERB_ALTERNATION})` +
+    `)${BOUNDARY_AFTER}`,
+  'giu',
+);
+
+// A bare verb with no pronoun is only noise at the very edges of the
+// message. In the middle it is almost always the task's own verb —
+// "remind the team", "напомни команде о встрече".
+const LEADING_COMMAND_VERB_REGEX = new RegExp(
+  `^\\s*(?:${COMMAND_VERB_ALTERNATION})${BOUNDARY_AFTER}`,
+  'iu',
+);
 const TRAILING_COMMAND_VERB_REGEX = new RegExp(
   `${BOUNDARY_BEFORE}(?:${COMMAND_VERB_ALTERNATION})\\s*$`,
   'iu',
 );
+
+// An apostrophe must not count as a word break, or the possessive "men's"
+// would lose its "men".
+const SUBJECT_BOUNDARY_AFTER = "(?![\\p{L}\\p{N}'’])";
+// "men/я/I" is a sentence subject: only meaningful to drop at the very start.
+const LEADING_SUBJECT_REGEX = new RegExp(`^\\s*(?:men|я|i)${SUBJECT_BOUNDARY_AFTER}`, 'iu');
+// "menga/мне" ("to me") carries no task content at either edge.
+const LEADING_DATIVE_REGEX = new RegExp(`^\\s*(?:menga|мне)${BOUNDARY_AFTER}`, 'iu');
+const TRAILING_DATIVE_REGEX = new RegExp(`${BOUNDARY_BEFORE}(?:menga|мне)\\s*$`, 'iu');
 
 // Two passes: a preposition can be exposed only after the punctuation next to
 // it is stripped (or vice versa), e.g. ", at " -> ", " -> "" needs both steps.
@@ -492,8 +547,19 @@ const extractTitle = (originalText: string, ranges: MatchRange[]): string => {
     const isLast = index === segments.length - 1;
 
     let result = segment;
+
+    // Clusters go first: stripping a bare leading verb before this would
+    // break "remind me" apart and strand the pronoun.
+    result = result.replace(COMMAND_CLUSTER_REGEX, ' ');
+
     if (!isLast) result = stripTrailingEdge(result);
     if (!isFirst) result = stripLeadingEdge(result);
+
+    // Only the first and last segments touch the edges of the original
+    // message, so only they may drop a bare imperative.
+    if (isFirst) result = result.replace(LEADING_COMMAND_VERB_REGEX, '');
+    if (isLast) result = result.replace(TRAILING_COMMAND_VERB_REGEX, '');
+
     return result;
   });
 
@@ -505,16 +571,19 @@ const extractTitle = (originalText: string, ranges: MatchRange[]): string => {
 
   let title = finalCleaned.length > 0 ? finalCleaned : originalText.trim();
 
-  // Drop a trailing command verb ("...eslat", "...remind me") that isn't
-  // part of the task, plus whatever punctuation/whitespace it exposes. If
-  // that empties the title out, it wasn't real content to begin with —
-  // keep the pre-strip version instead of losing everything.
+  // Drop the "remind me" phrasing and bare pronouns that carry no task
+  // content. If that empties the title out, it wasn't real content to
+  // begin with — keep the pre-strip version instead of losing everything.
   const beforeCommandStrip = title;
-  for (let i = 0; i < 2; i++) {
-    title = title.replace(TRAILING_COMMAND_VERB_REGEX, '');
-    title = title.replace(TRAILING_EDGE_PUNCTUATION_REGEX, '');
-  }
-  title = title.trim();
+
+  title = title.replace(COMMAND_CLUSTER_REGEX, ' ').replace(/\s+/g, ' ').trim();
+  title = title.replace(LEADING_SUBJECT_REGEX, '').replace(LEADING_DATIVE_REGEX, '');
+  title = title.replace(TRAILING_DATIVE_REGEX, '');
+  title = title
+    .replace(LEADING_EDGE_PUNCTUATION_REGEX, '')
+    .replace(TRAILING_EDGE_PUNCTUATION_REGEX, '')
+    .trim();
+
   if (title.length === 0) {
     title = beforeCommandStrip;
   }
