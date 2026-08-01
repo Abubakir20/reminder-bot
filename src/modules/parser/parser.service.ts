@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 import { ParsedReminder } from './parser.types.js';
 import { ReminderRepeatType } from '../reminder/reminder.types.js';
+import { parseWithGemini } from '../ai/ai.service.js';
 
 interface MatchRange {
   start: number;
@@ -418,7 +419,13 @@ const buildCalendarRemindAt = (
 
 // --- title extraction & cleanup ---
 
-const PREPOSITION_WORDS = ['at', 'on', 'in', 'by', 'da', 'ga', 'gacha', 'kuni', 'в', 'во', 'на', 'к'];
+// Articles are stripped alongside prepositions: removing a date expression
+// like "the 31st of July" leaves the article stranded at the edge.
+const PREPOSITION_WORDS = [
+  'at', 'on', 'in', 'by', 'a', 'an', 'the',
+  'da', 'ga', 'gacha', 'kuni',
+  'в', 'во', 'на', 'к',
+];
 const PREPOSITION_ALTERNATION = PREPOSITION_WORDS.join('|');
 
 const TRAILING_PREPOSITION_REGEX = new RegExp(
@@ -710,4 +717,31 @@ export const parse = (
     ambiguousToken,
     unclear,
   };
+};
+
+const AI_FALLBACK_CONFIDENCE_THRESHOLD = 0.7;
+const AI_FALLBACK_MIN_TEXT_LENGTH = 3;
+
+// Regex first; the model is only consulted when the regex result is weak.
+// The threshold is confidence alone — a set `unclear` must NOT keep a
+// message away from the model, since "day recognized, time missing" is
+// exactly the case the model is there to resolve.
+export const parseWithFallback = async (
+  text: string,
+  now: Date,
+  timezone: string,
+): Promise<ParsedReminder> => {
+  const result = parse(text, now, timezone);
+
+  if (result.confidence >= AI_FALLBACK_CONFIDENCE_THRESHOLD) {
+    return result;
+  }
+
+  if (text.trim().length < AI_FALLBACK_MIN_TEXT_LENGTH) {
+    return result;
+  }
+
+  const aiResult = await parseWithGemini(text, now, timezone);
+
+  return aiResult ?? result;
 };

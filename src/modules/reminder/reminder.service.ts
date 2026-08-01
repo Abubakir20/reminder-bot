@@ -45,9 +45,9 @@ export const getUserReminders = async (
   return ReminderModel.find({
     userId,
     status: ReminderStatus.ACTIVE,
-  }).sort({
-    remindAt: 1,
-  });
+  })
+    .sort({ remindAt: 1 })
+    .limit(10);
 };
 
 export const deleteReminder = async (
@@ -70,11 +70,17 @@ export const completeReminder = async (
   );
 };
 
+// userId is part of the filter, not a separate check beforehand — the
+// filter+update is atomic, a check-then-update wouldn't be. callback_data
+// is client-supplied and can be forged with someone else's ObjectId, so
+// scoping the match to the owning user is what actually prevents
+// cancelling someone else's reminder.
 export const cancelReminder = async (
   id: string,
+  userId: Types.ObjectId,
 ): Promise<ReminderDocument | null> => {
-  return ReminderModel.findByIdAndUpdate(
-    id,
+  return ReminderModel.findOneAndUpdate(
+    { _id: id, userId, status: ReminderStatus.ACTIVE },
     {
       status: ReminderStatus.CANCELLED,
     },

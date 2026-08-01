@@ -26,7 +26,6 @@ export interface Translations {
     created: string;
     updated: string;
     deleted: string;
-    cancelled: string;
 
     needTime: string;
     needDate: string;
@@ -39,6 +38,13 @@ export interface Translations {
       monthly: string;
       yearly: string;
     };
+
+    listEmpty: string;
+    listHeader: (count: number) => string;
+    listItem: (index: number, title: string, time: string) => string;
+    cancelButton: string;
+    cancelled: (title: string) => string;
+    cancelFailed: string;
   };
 
   notification: {

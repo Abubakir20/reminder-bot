@@ -9,4 +9,6 @@ export const env = cleanEnv(process.env, {
   PORT: port({ default: 3000 }),
   MONGO_URI: str(),
   TELEGRAM_BOT_TOKEN: str(),
+  GEMINI_API_KEY: str(),
+  GEMINI_MODEL: str({ default: 'gemini-3.5-flash' }),
 });

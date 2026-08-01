@@ -57,21 +57,27 @@ export const ru: Translations = {
     created: "✅ Напоминание создано.",
     updated: "✅ Напоминание обновлено.",
     deleted: "🗑 Напоминание удалено.",
-    cancelled: "🚫 Напоминание отменено.",
 
     needTime: "🕐 Уточните время, например: «завтра в 18:00» или «через 2 часа».",
-    needDate: "🗓 Поняла время, но не дату. Попробуйте так: «9-е августа», «01.08» или «завтра».",
-    notUnderstood: "🤔 Не поняла. Попробуйте так: «завтра в 18:00 купить лекарство».",
+    needDate: "🗓 Время распознано, а дата — нет. Попробуйте так: «9-е августа», «01.08» или «завтра».",
+    notUnderstood: "🤔 Не удалось разобрать. Попробуйте так: «завтра в 18:00 купить лекарство».",
     ambiguous: (token: string, asTime: string, asDate: string) =>
-      `🤔 Не поняла, «${token}» — это время или дата? Вы имели в виду ${asTime} (время) или ${asDate} (дату)?`,
+      `🤔 Непонятно, «${token}» — это время или дата? Вы имели в виду ${asTime} (время) или ${asDate} (дату)?`,
     details: (title: string, time: string, leadMinutes: number) =>
-      `✅ Напоминание установлено: «${title}» на ${time}. Предупрежу за ${humanizeMinutes(leadMinutes)} до срока.`,
+      `✅ Напоминание установлено: «${title}» на ${time}. Уведомление придёт за ${humanizeMinutes(leadMinutes)} до срока.`,
     repeatLabels: {
       daily: "🔁 Повторяется ежедневно",
       weekly: "🔁 Повторяется еженедельно",
       monthly: "🔁 Повторяется ежемесячно",
       yearly: "🔁 Повторяется ежегодно",
     },
+
+    listEmpty: "📭 У вас нет активных напоминаний.",
+    listHeader: (count: number) => `📋 Ваши напоминания (${count}):`,
+    listItem: (index: number, title: string, time: string) => `${index}. ${title} — ${time}`,
+    cancelButton: "❌ Отменить",
+    cancelled: (title: string) => `🚫 Отменено: «${title}».`,
+    cancelFailed: "⚠️ Не удалось отменить — возможно, напоминание уже отменено.",
   },
 
   notification: {

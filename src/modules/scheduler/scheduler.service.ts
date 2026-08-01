@@ -29,7 +29,6 @@ const processReminder = async (
   const user = await findUserById(reminder.userId);
   if (!user) {
     await markMissed(reminder._id.toString());
-    console.log(`[Scheduler] ${reminder._id}: user not found, marked MISSED.`);
     return;
   }
 
@@ -50,21 +49,14 @@ const processReminder = async (
   const isMainMoment = chosenMoment.getTime() === reminder.remindAt.getTime();
   const lateMinutes = (now.getTime() - chosenMoment.getTime()) / 60_000;
 
-  console.log(
-    `[Scheduler] ${reminder._id}: chosen=${chosenMoment.toISOString()} lateMin=${lateMinutes.toFixed(1)} main=${isMainMoment}`,
-  );
-
   if (lateMinutes > OVERDUE_THRESHOLD_MINUTES) {
     if (!isMainMoment) {
       const nextRunAt = getNextRunAt(reminder.remindAt, reminder.remindBefore, now);
       await rescheduleReminder(reminder._id.toString(), nextRunAt);
-      console.log(`[Scheduler] ${reminder._id}: advance warning too late, rescheduled to ${nextRunAt.toISOString()}.`);
     } else if (reminder.repeat !== ReminderRepeatType.NONE) {
       await advanceRepeat(reminder, now);
-      console.log(`[Scheduler] ${reminder._id}: main moment too late, repeat advanced.`);
     } else {
       await markMissed(reminder._id.toString());
-      console.log(`[Scheduler] ${reminder._id}: main moment too late, marked MISSED.`);
     }
     return;
   }
@@ -94,8 +86,6 @@ const processReminder = async (
     return;
   }
 
-  console.log(`[Scheduler] ${reminder._id}: sent (${kind}).`);
-
   if (isAdvanceWarning) {
     const nextRunAt = getNextRunAt(reminder.remindAt, reminder.remindBefore, now);
     await recordNotification(reminder._id.toString(), now, nextRunAt);
@@ -113,7 +103,6 @@ const runTick = async (sender: MessageSender): Promise<void> => {
   try {
     const now = new Date();
     const due = await findDueReminders(now);
-    console.log(`[Scheduler] Tick ${now.toISOString()} — ${due.length} due.`);
 
     for (const reminder of due) {
       try {

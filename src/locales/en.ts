@@ -52,7 +52,6 @@ Ready to create new reminders? 😊
     created: "✅ Reminder created.",
     updated: "✏️ Reminder updated.",
     deleted: "🗑 Reminder deleted.",
-    cancelled: "🚫 Reminder cancelled.",
 
     needTime: "🕐 Please specify a time, e.g. \"tomorrow 18:00\" or \"in 2 hours\".",
     needDate: "🗓 I got the time, but not the date. Try formats like \"9th August\", \"01.08\", or \"tomorrow\".",
@@ -67,6 +66,13 @@ Ready to create new reminders? 😊
       monthly: "🔁 Repeats monthly",
       yearly: "🔁 Repeats yearly",
     },
+
+    listEmpty: "📭 You have no active reminders.",
+    listHeader: (count: number) => `📋 Your reminders (${count}):`,
+    listItem: (index: number, title: string, time: string) => `${index}. ${title} — ${time}`,
+    cancelButton: "❌ Cancel",
+    cancelled: (title: string) => `🚫 Cancelled: "${title}".`,
+    cancelFailed: "⚠️ Couldn't cancel that — it may already be cancelled.",
   },
 
   notification: {

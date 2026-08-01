@@ -52,7 +52,6 @@ Yangi eslatmalar yaratishga tayyorman 😊
     created: "✅ Eslatma yaratildi.",
     updated: "✏️ Eslatma yangilandi.",
     deleted: "🗑 Eslatma o'chirildi.",
-    cancelled: "🚫 Eslatma bekor qilindi.",
 
     needTime: "🕐 Iltimos, vaqtni ko'rsating, masalan: \"ertaga 18:00\" yoki \"2 soatdan keyin\".",
     needDate: "🗓 Vaqtni tushundim, lekin sanani tushunmadim. Masalan: \"9-avgust\", \"01.08\" yoki \"ertaga\" deb yozing.",
@@ -67,6 +66,13 @@ Yangi eslatmalar yaratishga tayyorman 😊
       monthly: "🔁 Har oy takrorlanadi",
       yearly: "🔁 Har yili takrorlanadi",
     },
+
+    listEmpty: "📭 Sizda faol eslatmalar yo'q.",
+    listHeader: (count: number) => `📋 Eslatmalaringiz (${count}):`,
+    listItem: (index: number, title: string, time: string) => `${index}. ${title} — ${time}`,
+    cancelButton: "❌ Bekor qilish",
+    cancelled: (title: string) => `🚫 Bekor qilindi: "${title}".`,
+    cancelFailed: "⚠️ Bekor qilib bo'lmadi — ehtimol, eslatma allaqachon bekor qilingan.",
   },
 
   notification: {
