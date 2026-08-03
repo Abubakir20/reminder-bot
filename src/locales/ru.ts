@@ -48,6 +48,7 @@ export const ru: Translations = {
 
 /start - Запустить бота
 /list - Мои напоминания
+/edit - Изменить напоминание
 /language - Сменить язык
 /help - Помощь`,
   },
@@ -61,12 +62,14 @@ export const ru: Translations = {
     commands: {
       start: "Запустить бота",
       list: "Мои напоминания",
+      edit: "Изменить напоминание",
       language: "Сменить язык",
       help: "Помощь",
     },
     buttons: {
       create: "➕ Новое напоминание",
       list: "📋 Мои напоминания",
+      edit: "✏️ Изменить",
       language: "🌐 Язык",
       help: "❓ Помощь",
     },
@@ -102,6 +105,12 @@ export const ru: Translations = {
     cancelButton: "❌ Отменить",
     cancelled: (title: string) => `🚫 Отменено: «${title}».`,
     cancelFailed: "⚠️ Не удалось отменить — возможно, напоминание уже отменено.",
+
+    editListHeader: "✏️ Выберите напоминание, которое нужно изменить:",
+    editPrompt: (title: string, time: string) =>
+      `✏️ Сейчас: «${title}» на ${time}.\n\nОтветьте на это сообщение новой формулировкой, например «завтра в 10:00 позвонить врачу».`,
+    editSuccess: (title: string, time: string) => `✅ Обновлено: «${title}» на ${time}.`,
+    editFailed: "⚠️ Не удалось изменить напоминание — возможно, оно больше не активно.",
   },
 
   notification: {

@@ -23,7 +23,10 @@ Rules:
 - If the message names a day but no clock time, return the date and set time to null.
 - If the message names neither, set both to null.
 - "title" is the task itself, with the date/time wording and any command verb ("eslat", "напомни", "remind me") removed. Keep it in the user's original language.
-- "repeat" describes recurrence: NONE, DAILY, WEEKLY, MONTHLY, or YEARLY. A monthly recurrence may legitimately come with a date (e.g. "har oyning birinchi kunida" -> the first of the month, repeat MONTHLY).
+- A weekday name ("chorshanba", "среду", "Wednesday", "Wed") means the NEAREST FUTURE date falling on that weekday, counted from the current local time you were given. Work the date out by counting forward from today — never substitute tomorrow's date. If the named weekday is today and the stated time has not passed yet, use today; if it has already passed, use the same weekday next week.
+- "next week" / "keyingi hafta" / "следующая неделя" before a weekday means that weekday of the FOLLOWING calendar week, not the nearest one.
+- A weekday combined with a recurrence word ("har hafta chorshanba", "каждую среду", "every Wednesday") is repeat WEEKLY, with the date set to the nearest future occurrence.
+- "repeat" describes recurrence: NONE, DAILY, WEEKLY, MONTHLY, or YEARLY. A monthly recurrence may legitimately come with a date (e.g. "har oyning birinchi kunida" -> the first of the month, repeat MONTHLY). For a day-of-month phrase use the nearest future occurrence of that day; if this month's has passed, use next month's.
 - "remindBeforeMinutes" is how long BEFORE the deadline the user wants a warning ("2 soat oldin", "за час до", "30 minutes before"). Use null when the message doesn't ask for one.
 - If the message is not a request to be reminded of anything (a greeting, small talk, a question), set isReminder to false and leave the other fields at their neutral values.
 

@@ -43,6 +43,7 @@ Ready to create new reminders? 😊
 
 /start - Start the bot
 /list - My reminders
+/edit - Edit a reminder
 /language - Change language
 /help - Help`,
   },
@@ -56,12 +57,14 @@ Ready to create new reminders? 😊
     commands: {
       start: "Start the bot",
       list: "My reminders",
+      edit: "Edit a reminder",
       language: "Change language",
       help: "Help",
     },
     buttons: {
       create: "➕ New reminder",
       list: "📋 My reminders",
+      edit: "✏️ Edit",
       language: "🌐 Language",
       help: "❓ Help",
     },
@@ -97,6 +100,12 @@ every month at 09:00 pay bills`,
     cancelButton: "❌ Cancel",
     cancelled: (title: string) => `🚫 Cancelled: "${title}".`,
     cancelFailed: "⚠️ Couldn't cancel that — it may already be cancelled.",
+
+    editListHeader: "✏️ Pick the reminder you want to change:",
+    editPrompt: (title: string, time: string) =>
+      `✏️ Now set to: "${title}" at ${time}.\n\nReply to this message with the new wording, for example "tomorrow at 10:00 call the doctor".`,
+    editSuccess: (title: string, time: string) => `✅ Updated: "${title}" at ${time}.`,
+    editFailed: "⚠️ Couldn't update that reminder — it may no longer be active.",
   },
 
   notification: {

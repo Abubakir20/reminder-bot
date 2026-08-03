@@ -3,6 +3,7 @@ import { DateTime } from 'luxon';
 import {
   ReminderDocument,
   CreateReminderDto,
+  UpdateReminderDto,
   ReminderStatus,
   ReminderRepeatType,
 } from './reminder.types.js';
@@ -93,6 +94,35 @@ export const cancelReminder = async (
     {
       returnDocument: 'after',
     },
+  );
+};
+
+// Like cancelReminder, ownership and status live in the filter rather than in
+// a preceding read: only the filter is atomic, a check-then-write is not.
+// A forged callback_data carrying someone else's id simply matches nothing.
+export const updateReminder = async (
+  id: string,
+  userId: Types.ObjectId,
+  data: UpdateReminderDto,
+): Promise<ReminderDocument | null> => {
+  const remindBefore = data.remindBefore ?? [60];
+  const nextRunAt = computeNextRun(data.remindAt, remindBefore, new Date());
+
+  return ReminderModel.findOneAndUpdate(
+    { _id: id, userId, status: ReminderStatus.ACTIVE },
+    {
+      $set: {
+        title: data.title,
+        originalText: data.originalText,
+        remindAt: data.remindAt,
+        repeat: data.repeat ?? ReminderRepeatType.NONE,
+        remindBefore,
+        nextRunAt,
+      },
+      // The schedule moved, so earlier sends say nothing about the new one.
+      $unset: { lastNotificationAt: '' },
+    },
+    { returnDocument: 'after' },
   );
 };
 

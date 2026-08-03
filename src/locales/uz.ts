@@ -43,6 +43,7 @@ Yangi eslatmalar yaratishga tayyorman 😊
 
 /start - Botni ishga tushirish
 /list - Eslatmalarim
+/edit - Eslatmani o'zgartirish
 /language - Tilni o'zgartirish
 /help - Yordam`,
   },
@@ -56,12 +57,14 @@ Yangi eslatmalar yaratishga tayyorman 😊
     commands: {
       start: "Botni ishga tushirish",
       list: "Eslatmalarim",
+      edit: "Eslatmani o'zgartirish",
       language: "Tilni o'zgartirish",
       help: "Yordam",
     },
     buttons: {
       create: "➕ Yangi eslatma",
       list: "📋 Eslatmalarim",
+      edit: "✏️ O'zgartirish",
       language: "🌐 Til",
       help: "❓ Yordam",
     },
@@ -97,6 +100,12 @@ har kuni 8:00 da suv ichish`,
     cancelButton: "❌ Bekor qilish",
     cancelled: (title: string) => `🚫 Bekor qilindi: "${title}".`,
     cancelFailed: "⚠️ Bekor qilib bo'lmadi — ehtimol, eslatma allaqachon bekor qilingan.",
+
+    editListHeader: "✏️ O'zgartirmoqchi bo'lgan eslatmani tanlang:",
+    editPrompt: (title: string, time: string) =>
+      `✏️ Hozir: "${title}" — ${time}.\n\nShu xabarga javob qilib yangi matnni yozing, masalan "ertaga 10:00 da shifokorga borish".`,
+    editSuccess: (title: string, time: string) => `✅ Yangilandi: "${title}" — ${time}.`,
+    editFailed: "⚠️ Eslatmani o'zgartirib bo'lmadi — ehtimol, u endi faol emas.",
   },
 
   notification: {

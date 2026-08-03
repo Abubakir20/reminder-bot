@@ -27,15 +27,15 @@ export const CALLBACKS = {
   },
 } as const;
 
-// reminder:cancel:<reminderId> — keeping the format in one place so it
+// reminder:<action>:<reminderId> — keeping the format in one place so it
 // doesn't drift between the keyboard that builds it and the handler that
 // parses it. ObjectId hex is 24 chars, well under Telegram's 64-byte
 // callback_data limit.
-export const buildCancelReminderPayload = (reminderId: string): string =>
-  `${CALLBACKS.REMINDER.CANCEL}:${reminderId}`;
+const buildPayload = (action: string, reminderId: string): string =>
+  `${action}:${reminderId}`;
 
-export const parseCancelReminderPayload = (data: string): string | null => {
-  const prefix = `${CALLBACKS.REMINDER.CANCEL}:`;
+const parsePayload = (action: string, data: string): string | null => {
+  const prefix = `${action}:`;
   if (!data.startsWith(prefix)) {
     return null;
   }
@@ -43,3 +43,15 @@ export const parseCancelReminderPayload = (data: string): string | null => {
   const reminderId = data.slice(prefix.length);
   return reminderId.length > 0 ? reminderId : null;
 };
+
+export const buildCancelReminderPayload = (reminderId: string): string =>
+  buildPayload(CALLBACKS.REMINDER.CANCEL, reminderId);
+
+export const parseCancelReminderPayload = (data: string): string | null =>
+  parsePayload(CALLBACKS.REMINDER.CANCEL, data);
+
+export const buildEditReminderPayload = (reminderId: string): string =>
+  buildPayload(CALLBACKS.REMINDER.EDIT, reminderId);
+
+export const parseEditReminderPayload = (data: string): string | null =>
+  parsePayload(CALLBACKS.REMINDER.EDIT, data);

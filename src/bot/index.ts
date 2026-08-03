@@ -23,6 +23,7 @@ const buildCommands = (language: LanguageCode): BotCommand[] => {
   return [
     { command: 'start', description: commands.start },
     { command: 'list', description: commands.list },
+    { command: 'edit', description: commands.edit },
     { command: 'language', description: commands.language },
     { command: 'help', description: commands.help },
   ];

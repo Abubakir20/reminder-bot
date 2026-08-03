@@ -27,12 +27,14 @@ export interface Translations {
     commands: {
       start: string;
       list: string;
+      edit: string;
       language: string;
       help: string;
     };
     buttons: {
       create: string;
       list: string;
+      edit: string;
       language: string;
       help: string;
     };
@@ -62,6 +64,11 @@ export interface Translations {
     cancelButton: string;
     cancelled: (title: string) => string;
     cancelFailed: string;
+
+    editListHeader: string;
+    editPrompt: (title: string, time: string) => string;
+    editSuccess: (title: string, time: string) => string;
+    editFailed: string;
   };
 
   notification: {

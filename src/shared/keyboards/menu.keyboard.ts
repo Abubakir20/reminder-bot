@@ -3,6 +3,7 @@ import { Keyboard } from 'grammy';
 export interface MenuButtonLabels {
   create: string;
   list: string;
+  edit: string;
   language: string;
   help: string;
 }
@@ -12,6 +13,7 @@ export const createMenuKeyboard = (labels: MenuButtonLabels): Keyboard => {
     .text(labels.create)
     .row()
     .text(labels.list)
+    .text(labels.edit)
     .row()
     .text(labels.language)
     .text(labels.help)

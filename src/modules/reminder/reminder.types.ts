@@ -68,4 +68,18 @@ export interface CreateReminderDto {
   timezone?: string;
 }
 
+// Re-parsed content replacing an existing reminder. Ownership and status are
+// enforced by the query filter, so they are deliberately not fields here.
+export interface UpdateReminderDto {
+  title: string;
+
+  originalText: string;
+
+  remindAt: Date;
+
+  remindBefore?: number[];
+
+  repeat?: ReminderRepeatType;
+}
+
 export type ReminderDocument = HydratedDocument<IReminder>;

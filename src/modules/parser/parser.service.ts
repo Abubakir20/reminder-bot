@@ -41,6 +41,23 @@ interface CalendarDateMatch {
   range: MatchRange;
 }
 
+interface WeekdayMatch {
+  weekday: number; // luxon convention: 1 = Monday ... 7 = Sunday
+  nextWeek: boolean;
+  range: MatchRange;
+}
+
+interface MonthDayMatch {
+  day: number;
+  range: MatchRange;
+}
+
+interface YearlyDateMatch {
+  month: number;
+  day: number;
+  range: MatchRange;
+}
+
 const TITLE_MAX_LENGTH = 100;
 
 const BOUNDARY_BEFORE = '(?<![\\p{L}\\p{N}])';
@@ -73,6 +90,158 @@ const matchDayMarker = (text: string): DayMatch | null => {
     const match = regex.exec(text);
     if (match) {
       return { offset, range: toRange(match) };
+    }
+  }
+  return null;
+};
+
+// --- weekdays ---
+
+const WEEKDAY_NAMES: Array<[string, number]> = [
+  ['dushanba', 1], ['seshanba', 2], ['chorshanba', 3], ['payshanba', 4],
+  ['juma', 5], ['shanba', 6], ['yakshanba', 7],
+
+  ['понедельника', 1], ['понедельник', 1],
+  ['вторника', 2], ['вторник', 2],
+  ['среду', 3], ['среды', 3], ['среда', 3],
+  ['четверга', 4], ['четверг', 4],
+  ['пятницу', 5], ['пятницы', 5], ['пятница', 5],
+  ['субботу', 6], ['субботы', 6], ['суббота', 6],
+  ['воскресенья', 7], ['воскресенье', 7],
+
+  ['monday', 1], ['mon', 1],
+  ['tuesday', 2], ['tue', 2],
+  ['wednesday', 3], ['wed', 3],
+  ['thursday', 4], ['thu', 4],
+  ['friday', 5], ['fri', 5],
+  ['saturday', 6], ['sat', 6],
+  ['sunday', 7], ['sun', 7],
+];
+
+const WEEKDAY_LOOKUP = new Map<string, number>(WEEKDAY_NAMES);
+// Longest first so "shanba" cannot win over "yakshanba", nor "mon" over "monday".
+const WEEKDAY_ALTERNATION = [...WEEKDAY_NAMES]
+  .sort((a, b) => b[0].length - a[0].length)
+  .map(([name]) => name)
+  .join('|');
+
+const NEXT_WEEK_ALTERNATION = "keyingi\\s+hafta|следующ\\S*\\s+недел\\S*|next\\s+week";
+
+// captures: 1 = "next week" marker (optional), 2 = weekday name
+const WEEKDAY_REGEX = bounded(
+  `(?:(${NEXT_WEEK_ALTERNATION})\\s+)?(${WEEKDAY_ALTERNATION})(?:\\s+kuni)?`,
+);
+
+const matchWeekday = (text: string): WeekdayMatch | null => {
+  const match = WEEKDAY_REGEX.exec(text);
+  if (!match) return null;
+
+  const weekday = WEEKDAY_LOOKUP.get(match[2].toLowerCase());
+  if (!weekday) return null;
+
+  return { weekday, nextWeek: match[1] !== undefined, range: toRange(match) };
+};
+
+// --- day of month with a monthly recurrence ---
+
+const APOSTROPHE = "['’]";
+
+const ORDINAL_WORDS: Array<[string, number]> = [
+  ['birinchi', 1], ['ikkinchi', 2], ['uchinchi', 3], ['beshinchi', 5],
+  ['oltinchi', 6], ['yettinchi', 7], ['sakkizinchi', 8],
+
+  ['первого', 1], ['второго', 2], ['третьего', 3], ['пятого', 5],
+  ['шестого', 6], ['седьмого', 7], ['восьмого', 8], ['девятого', 9],
+  ['десятого', 10], ['пятнадцатого', 15], ['четвертого', 4], ['четвёртого', 4],
+];
+
+// Written with an apostrophe class so both ' and ’ are accepted. Compound
+// forms come first so "o'n ikkinchi" cannot lose to a shorter alternative.
+const APOSTROPHE_ORDINALS: Array<[string, number]> = [
+  [`o${APOSTROPHE}n\\s+ikkinchi`, 12],
+  [`o${APOSTROPHE}n\\s+birinchi`, 11],
+  [`to${APOSTROPHE}qqizinchi`, 9],
+  [`to${APOSTROPHE}rtinchi`, 4],
+  [`o${APOSTROPHE}ninchi`, 10],
+];
+
+const normalizeOrdinal = (word: string): string =>
+  word.toLowerCase().replace(/[’]/g, "'").replace(/\s+/g, ' ');
+
+const ORDINAL_LOOKUP = new Map<string, number>([
+  ...ORDINAL_WORDS,
+  ["to'rtinchi", 4],
+  ["to'qqizinchi", 9],
+  ["o'ninchi", 10],
+  ["o'n birinchi", 11],
+  ["o'n ikkinchi", 12],
+]);
+
+const ORDINAL_ALTERNATION = [
+  ...APOSTROPHE_ORDINALS.map(([pattern]) => pattern),
+  ...[...ORDINAL_WORDS].sort((a, b) => b[0].length - a[0].length).map(([word]) => word),
+].join('|');
+
+const dayFromMatch = (digits: string | undefined, word: string | undefined): number | null => {
+  if (digits !== undefined) {
+    const day = Number(digits);
+    return day >= 1 && day <= 31 ? day : null;
+  }
+  if (word !== undefined) {
+    return ORDINAL_LOOKUP.get(normalizeOrdinal(word)) ?? null;
+  }
+  return null;
+};
+
+// Every pattern here already carries its own "monthly" wording, so a match
+// implies MONTHLY and the whole phrase is cut from the title.
+const MONTH_DAY_PATTERNS: Array<{ regex: RegExp; digits: number; word: number }> = [
+  {
+    // har oyning birinchi kunida / har oyning 15-kunida / har oy 1-sanada
+    regex: bounded(
+      `har\\s+oy(?:ning|da)?\\s+(?:(\\d{1,2})\\s*-?\\s*|(${ORDINAL_ALTERNATION})\\s+)(?:kunida|kunlari|kuni|sanada|sanasida|sana)`,
+    ),
+    digits: 1,
+    word: 2,
+  },
+  {
+    // первого числа каждого месяца / 15 числа каждого месяца
+    regex: bounded(
+      `(?:(\\d{1,2})|(${ORDINAL_ALTERNATION}))\\s+числ[аоу]\\s+кажд\\S+\\s+месяца`,
+    ),
+    digits: 1,
+    word: 2,
+  },
+  {
+    // каждое 1 число / каждого 15 числа
+    regex: bounded(`кажд\\S+\\s+(?:(\\d{1,2})|(${ORDINAL_ALTERNATION}))\\s+числ[аоу]`),
+    digits: 1,
+    word: 2,
+  },
+  {
+    // on the 1st of every month
+    regex: bounded(`(?:on\\s+the\\s+)?(\\d{1,2})(?:st|nd|rd|th)\\s+of\\s+(?:every|each)\\s+month`),
+    digits: 1,
+    word: 2,
+  },
+  {
+    // every month on the 15th
+    regex: bounded(
+      `(?:every|each)\\s+month\\s+(?:on\\s+the\\s+)?(\\d{1,2})(?:st|nd|rd|th)`,
+    ),
+    digits: 1,
+    word: 2,
+  },
+];
+
+const matchMonthDay = (text: string): MonthDayMatch | null => {
+  for (const { regex, digits, word } of MONTH_DAY_PATTERNS) {
+    const match = regex.exec(text);
+    if (!match) continue;
+
+    const day = dayFromMatch(match[digits], match[word]);
+    if (day !== null) {
+      return { day, range: toRange(match) };
     }
   }
   return null;
@@ -221,14 +390,21 @@ const REPEAT_MARKERS: Array<{ regex: RegExp; repeat: ReminderRepeatType }> = [
     repeat: ReminderRepeatType.DAILY,
   },
   {
+    // The weekday-qualified forms ("каждую среду", "every Wednesday") match
+    // only the determiner via lookahead — the weekday itself belongs to
+    // matchWeekday, and letting both claim it would overlap their ranges.
     regex: bounded(
-      '(?:har\\s+hafta|каждую\\s+неделю|еженедельно|(?:every|each)\\s+week|weekly)',
+      '(?:har\\s+hafta(?:ning|da)?|каждую\\s+неделю|еженедельно|(?:every|each)\\s+week|weekly' +
+        `|(?:кажд\\S+)(?=\\s+(?:${WEEKDAY_ALTERNATION}))` +
+        `|(?:every|each)(?=\\s+(?:${WEEKDAY_ALTERNATION}))` +
+        `|har(?=\\s+(?:${WEEKDAY_ALTERNATION}))` +
+        ')',
     ),
     repeat: ReminderRepeatType.WEEKLY,
   },
   {
     regex: bounded(
-      '(?:har\\s+oy|каждый\\s+месяц|ежемесячно|(?:every|each)\\s+month|monthly)',
+      '(?:har\\s+oy(?:ning|da)?|каждый\\s+месяц|ежемесячно|(?:every|each)\\s+month|monthly)',
     ),
     repeat: ReminderRepeatType.MONTHLY,
   },
@@ -374,6 +550,105 @@ const matchCalendarDate = (text: string): CalendarDateMatch | null => {
   return null;
 };
 
+// --- yearly recurrence with an explicit month and day ---
+
+const monthFromName = (name: string | undefined): number | null => {
+  if (name === undefined) return null;
+  return MONTH_LOOKUP.get(name.toLowerCase()) ?? null;
+};
+
+const monthFromOrdinal = (digits: string | undefined, word: string | undefined): number | null => {
+  const month = dayFromMatch(digits, word);
+  return month !== null && month >= 1 && month <= 12 ? month : null;
+};
+
+type YearlyExtractor = (match: RegExpExecArray) => { month: number; day: number } | null;
+
+const YEARLY_PATTERNS: Array<{ regex: RegExp; extract: YearlyExtractor }> = [
+  {
+    // har yilning birinchi oyining 2-kuni / har yilning 8-oyining 15-kunida
+    regex: bounded(
+      `har\\s+yil(?:ning|da)?\\s+(?:(\\d{1,2})\\s*-?\\s*|(${ORDINAL_ALTERNATION})\\s+)` +
+        `oy(?:ining|ning|ida|i|da)?\\s+(?:(\\d{1,2})\\s*-?\\s*|(${ORDINAL_ALTERNATION})\\s+)` +
+        `kun(?:ida|lari|i)?`,
+    ),
+    extract: (m) => {
+      const month = monthFromOrdinal(m[1], m[2]);
+      const day = dayFromMatch(m[3], m[4]);
+      return month !== null && day !== null ? { month, day } : null;
+    },
+  },
+  {
+    // har yil 2-yanvarda / har yilning 5-mart kuni
+    regex: bounded(
+      `har\\s+yil(?:ning|da)?\\s+(\\d{1,2})\\s*-?\\s*(${MONTH_ALTERNATION})` +
+        `(?:da|ga|dan|gacha)?(?:\\s+kun(?:ida|i)?)?`,
+    ),
+    extract: (m) => {
+      const month = monthFromName(m[2]);
+      const day = dayFromMatch(m[1], undefined);
+      return month !== null && day !== null ? { month, day } : null;
+    },
+  },
+  {
+    // каждый год 2 января
+    regex: bounded(
+      `кажд\\S+\\s+год\\S*\\s+(?:(\\d{1,2})|(${ORDINAL_ALTERNATION}))\\s+(${MONTH_ALTERNATION})`,
+    ),
+    extract: (m) => {
+      const month = monthFromName(m[3]);
+      const day = dayFromMatch(m[1], m[2]);
+      return month !== null && day !== null ? { month, day } : null;
+    },
+  },
+  {
+    // второго января каждого года
+    regex: bounded(
+      `(?:(\\d{1,2})|(${ORDINAL_ALTERNATION}))\\s+(${MONTH_ALTERNATION})\\s+кажд\\S+\\s+года`,
+    ),
+    extract: (m) => {
+      const month = monthFromName(m[3]);
+      const day = dayFromMatch(m[1], m[2]);
+      return month !== null && day !== null ? { month, day } : null;
+    },
+  },
+  {
+    // every year on January 2
+    regex: bounded(
+      `(?:every|each)\\s+year\\s+(?:on\\s+(?:the\\s+)?)?(${MONTH_ALTERNATION})\\s+(\\d{1,2})(?:st|nd|rd|th)?`,
+    ),
+    extract: (m) => {
+      const month = monthFromName(m[1]);
+      const day = dayFromMatch(m[2], undefined);
+      return month !== null && day !== null ? { month, day } : null;
+    },
+  },
+  {
+    // on the 2nd of January every year
+    regex: bounded(
+      `(?:on\\s+the\\s+)?(\\d{1,2})(?:st|nd|rd|th)?\\s+of\\s+(${MONTH_ALTERNATION})\\s+(?:every|each)\\s+year`,
+    ),
+    extract: (m) => {
+      const month = monthFromName(m[2]);
+      const day = dayFromMatch(m[1], undefined);
+      return month !== null && day !== null ? { month, day } : null;
+    },
+  },
+];
+
+const matchYearlyDate = (text: string): YearlyDateMatch | null => {
+  for (const { regex, extract } of YEARLY_PATTERNS) {
+    const match = regex.exec(text);
+    if (!match) continue;
+
+    const parsed = extract(match);
+    if (parsed) {
+      return { ...parsed, range: toRange(match) };
+    }
+  }
+  return null;
+};
+
 // --- remindAt builders ---
 
 const buildAbsoluteRemindAt = (
@@ -439,6 +714,91 @@ const buildCalendarRemindAt = (
   }
 
   return candidate.toJSDate();
+};
+
+const buildWeekdayRemindAt = (
+  now: Date,
+  timezone: string,
+  weekday: number,
+  hour: number,
+  minute: number,
+  nextWeek: boolean,
+): Date => {
+  const nowInZone = DateTime.fromJSDate(now, { zone: timezone });
+  const atTime = (dt: DateTime): DateTime =>
+    dt.set({ hour, minute, second: 0, millisecond: 0 });
+
+  if (nextWeek) {
+    // Anchored to the start of next week rather than "now + 7 days", so
+    // "next week Monday" means that week's Monday no matter which day it
+    // is said on. startOf('week') is Monday-based.
+    const weekStart = nowInZone.plus({ weeks: 1 }).startOf('week');
+    return atTime(weekStart.plus({ days: weekday - 1 })).toJSDate();
+  }
+
+  const daysAhead = (weekday - nowInZone.weekday + 7) % 7;
+  let candidate = atTime(nowInZone.plus({ days: daysAhead }));
+
+  // Same weekday as today but the time has passed — take next week's.
+  if (candidate <= nowInZone) {
+    candidate = candidate.plus({ weeks: 1 });
+  }
+
+  return candidate.toJSDate();
+};
+
+const buildYearlyRemindAt = (
+  now: Date,
+  timezone: string,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+): Date => {
+  const nowInZone = DateTime.fromJSDate(now, { zone: timezone });
+
+  // Built from an explicit year rather than by adding a year to a candidate:
+  // 29 February only exists in leap years, and the day is clamped to the
+  // month's real length so a non-leap year lands on the 28th.
+  const at = (year: number): DateTime => {
+    const base = DateTime.fromObject(
+      { year, month, day: 1, hour, minute, second: 0, millisecond: 0 },
+      { zone: timezone },
+    );
+    return base.set({ day: Math.min(day, base.daysInMonth ?? 28) });
+  };
+
+  const candidate = at(nowInZone.year);
+
+  return candidate > nowInZone ? candidate.toJSDate() : at(nowInZone.year + 1).toJSDate();
+};
+
+const buildMonthDayRemindAt = (
+  now: Date,
+  timezone: string,
+  day: number,
+  hour: number,
+  minute: number,
+): Date => {
+  const nowInZone = DateTime.fromJSDate(now, { zone: timezone });
+
+  // Clamped explicitly: luxon's set({ day }) rolls a 31st in February over
+  // into March instead of clamping, which would silently move the reminder
+  // into the wrong month.
+  const atDay = (base: DateTime): DateTime =>
+    base.set({
+      day: Math.min(day, base.daysInMonth ?? 28),
+      hour,
+      minute,
+      second: 0,
+      millisecond: 0,
+    });
+
+  const candidate = atDay(nowInZone);
+
+  return candidate > nowInZone
+    ? candidate.toJSDate()
+    : atDay(nowInZone.plus({ months: 1 })).toJSDate();
 };
 
 // --- title extraction & cleanup ---
@@ -537,7 +897,10 @@ const extractTitle = (originalText: string, ranges: MatchRange[]): string => {
   const segments: string[] = [];
   let cursor = 0;
   for (const range of sorted) {
-    segments.push(originalText.slice(cursor, range.start));
+    // Ranges may overlap (a repeat marker sitting next to a weekday);
+    // never let the cursor walk backwards and re-emit removed text.
+    if (range.end <= cursor) continue;
+    segments.push(originalText.slice(cursor, Math.max(cursor, range.start)));
     cursor = range.end;
   }
   segments.push(originalText.slice(cursor));
@@ -650,10 +1013,20 @@ export const parse = (
   now: Date,
   timezone: string,
 ): ParsedReminder => {
-  const calendarMatchFromNames = matchCalendarDate(text);
+  // First: it spans a month name and a day number, so leaving it until after
+  // matchCalendarDate would let "2 января" be taken as a one-off date.
+  const yearlyMatch = matchYearlyDate(text);
+  const afterYearly = yearlyMatch ? maskRange(text, yearlyMatch.range) : text;
+
+  const calendarMatchFromNames = matchCalendarDate(afterYearly);
   let workingText = calendarMatchFromNames
-    ? maskRange(text, calendarMatchFromNames.range)
-    : text;
+    ? maskRange(afterYearly, calendarMatchFromNames.range)
+    : afterYearly;
+
+  // Carries its own recurrence wording ("har oyning 15-kunida"), so it is
+  // resolved and masked before the clock and repeat matchers see its digits.
+  const monthDayMatch = matchMonthDay(workingText);
+  workingText = monthDayMatch ? maskRange(workingText, monthDayMatch.range) : workingText;
 
   // Keyword-anchored / colon time is always unambiguous, so it's resolved
   // before we ever look at the bare "first.second" token.
@@ -671,7 +1044,11 @@ export const parse = (
 
   const dayMatch = matchDayMarker(workingText);
   const relativeMatch = matchRelativeTime(workingText);
+
+  // matchRepeat runs while the weekday is still visible: its weekday-qualified
+  // alternatives use a lookahead onto that word.
   const repeatMatch = matchRepeat(workingText);
+  const weekdayMatch = matchWeekday(workingText);
 
   let calendarMatch = calendarMatchFromNames;
   let clockMatch = clockMatchFromKeywords;
@@ -712,6 +1089,38 @@ export const parse = (
   if (relativeMatch) {
     remindAt = buildRelativeRemindAt(now, timezone, relativeMatch.totalMinutes);
     confidence = 0.7;
+  } else if (yearlyMatch && clockMatch) {
+    remindAt = buildYearlyRemindAt(
+      now,
+      timezone,
+      yearlyMatch.month,
+      yearlyMatch.day,
+      clockMatch.hour,
+      clockMatch.minute,
+    );
+    confidence = 0.9;
+  } else if (yearlyMatch) {
+    confidence = 0.5;
+    unclear = 'time';
+  } else if (monthDayMatch && clockMatch) {
+    remindAt = buildMonthDayRemindAt(now, timezone, monthDayMatch.day, clockMatch.hour, clockMatch.minute);
+    confidence = 0.9;
+  } else if (monthDayMatch) {
+    confidence = 0.5;
+    unclear = 'time';
+  } else if (weekdayMatch && clockMatch) {
+    remindAt = buildWeekdayRemindAt(
+      now,
+      timezone,
+      weekdayMatch.weekday,
+      clockMatch.hour,
+      clockMatch.minute,
+      weekdayMatch.nextWeek,
+    );
+    confidence = 0.9;
+  } else if (weekdayMatch) {
+    confidence = 0.5;
+    unclear = 'time';
   } else if (calendarMatch && clockMatch) {
     remindAt = buildCalendarRemindAt(now, timezone, calendarMatch, clockMatch.hour, clockMatch.minute);
     confidence = 0.9;
@@ -743,7 +1152,10 @@ export const parse = (
     unclear = 'ambiguous';
   }
 
-  const repeat = repeatMatch ? repeatMatch.repeat : ReminderRepeatType.NONE;
+  // Day-of-month and month-and-day phrases state their own recurrence.
+  let repeat = repeatMatch?.repeat ?? ReminderRepeatType.NONE;
+  if (monthDayMatch) repeat = ReminderRepeatType.MONTHLY;
+  if (yearlyMatch) repeat = ReminderRepeatType.YEARLY;
 
   // Out-of-range lead-time is ignored (falls back to the default) but the
   // expression is still cut from the title either way.
@@ -762,6 +1174,9 @@ export const parse = (
     repeatMatch?.range,
     ambiguousRange,
     remindBeforeMatch?.range,
+    weekdayMatch?.range,
+    monthDayMatch?.range,
+    yearlyMatch?.range,
   ].filter((range): range is MatchRange => range != null);
 
   const title = extractTitle(text, ranges);

@@ -247,6 +247,203 @@ describe('parser: rolling a bare time to the next day', () => {
   });
 });
 
+// Monday 2026-08-03 21:45 in Tashkent — chosen so "today" is a weekday that
+// several cases refer to, with an evening time that some clock times have
+// already passed and others have not.
+const MONDAY_NOW = new Date('2026-08-03T21:45:00+05:00');
+const runOnMonday = (text: string) => parse(text, MONDAY_NOW, TZ);
+
+describe('parser: weekday names', () => {
+  it('resolves a weekday with a weekly repeat marker', () => {
+    const r = runOnMonday('har hafta chorshanba kuni soat 18:00 da dori ichish');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 8, day: 5, hour: 18, minute: 0 });
+    assert.equal(r.repeat, ReminderRepeatType.WEEKLY);
+    assert.equal(r.title, 'dori ichish');
+  });
+
+  it('handles mixed case and a weekday later in the week', () => {
+    const r = runOnMonday('Har hafta Yakshanba kuni soat 01:00 da uhlash');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 8, day: 9, hour: 1, minute: 0 });
+    assert.equal(r.repeat, ReminderRepeatType.WEEKLY);
+    assert.equal(r.title, 'uhlash');
+  });
+
+  it('resolves a bare weekday as a one-off', () => {
+    const r = runOnMonday('chorshanba kuni soat 18:00 da uchrashuv');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 8, day: 5, hour: 18, minute: 0 });
+    assert.equal(r.repeat, ReminderRepeatType.NONE);
+    assert.equal(r.title, 'uchrashuv');
+  });
+
+  it('treats "каждую <weekday>" as a weekly repeat', () => {
+    const r = runOnMonday('каждую среду в 18:00 таблетки');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 8, day: 5, hour: 18, minute: 0 });
+    assert.equal(r.repeat, ReminderRepeatType.WEEKLY);
+    assert.equal(r.title, 'таблетки');
+  });
+
+  it('treats "every <weekday>" as a weekly repeat', () => {
+    const r = runOnMonday('every Wednesday at 18:00 pills');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 8, day: 5, hour: 18, minute: 0 });
+    assert.equal(r.repeat, ReminderRepeatType.WEEKLY);
+    assert.equal(r.title, 'pills');
+  });
+
+  it('keeps today when the named weekday is today and the time has not passed', () => {
+    const r = runOnMonday("dushanba kuni soat 23:00 da yig'ilish");
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 8, day: 3, hour: 23, minute: 0 });
+  });
+
+  it('rolls to next week when the named weekday is today but the time has passed', () => {
+    const r = runOnMonday("dushanba kuni soat 10:00 da yig'ilish");
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 8, day: 10, hour: 10, minute: 0 });
+  });
+
+  it('reads "keyingi hafta <weekday>" as next week, not the nearest one', () => {
+    const r = runOnMonday('keyingi hafta dushanba kuni soat 10:00 da uchrashuv');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 8, day: 10, hour: 10, minute: 0 });
+    assert.equal(r.title, 'uchrashuv');
+  });
+});
+
+describe('parser: day of month with a monthly repeat', () => {
+  it('reads an Uzbek ordinal word and rolls past a date already gone', () => {
+    const r = runOnMonday("har oyning birinchi kunida soat 7:00 da soliq to'lash");
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 9, day: 1, hour: 7, minute: 0 });
+    assert.equal(r.repeat, ReminderRepeatType.MONTHLY);
+    assert.equal(r.title, "soliq to'lash");
+  });
+
+  it('reads a numeric Uzbek day still ahead this month', () => {
+    const r = runOnMonday('har oyning 15-kunida soat 10:00 da hisobot');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 8, day: 15, hour: 10, minute: 0 });
+    assert.equal(r.repeat, ReminderRepeatType.MONTHLY);
+    assert.equal(r.title, 'hisobot');
+  });
+
+  it('reads the Russian "первого числа каждого месяца" form', () => {
+    const r = runOnMonday('первого числа каждого месяца в 09:00 оплатить счета');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 9, day: 1, hour: 9, minute: 0 });
+    assert.equal(r.repeat, ReminderRepeatType.MONTHLY);
+    assert.equal(r.title, 'оплатить счета');
+  });
+
+  it('reads the English "on the 1st of every month" form', () => {
+    const r = runOnMonday('on the 1st of every month at 09:00 pay bills');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 9, day: 1, hour: 9, minute: 0 });
+    assert.equal(r.repeat, ReminderRepeatType.MONTHLY);
+    assert.equal(r.title, 'pay bills');
+  });
+
+  it('clamps a day the target month does not have instead of overflowing', () => {
+    // From 31 Jan the next occurrence of "the 31st" is February, which has
+    // only 28 days in 2026 — it must land on the 28th, not spill into March.
+    const lateJanuary = new Date('2026-01-31T23:30:00+05:00');
+    const r = parse('har oyning 31-kunida soat 10:00 da hisobot', lateJanuary, TZ);
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 2, day: 28, hour: 10, minute: 0 });
+    assert.equal(r.repeat, ReminderRepeatType.MONTHLY);
+  });
+});
+
+// Late on 3 August 2026, so a January date is always next year while an
+// August one is still ahead in the current year.
+const YEARLY_NOW = new Date('2026-08-03T23:29:00+05:00');
+const runYearly = (text: string) => parse(text, YEARLY_NOW, TZ);
+
+describe('parser: yearly recurrence with a month and day', () => {
+  it('reads the nested Uzbek "year > month > day" form with ordinal words', () => {
+    const r = runYearly("har yilning birinchi oyining 2-kuni soat 22:20 da kino ko'rish");
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2027, month: 1, day: 2, hour: 22, minute: 20 });
+    assert.equal(r.repeat, ReminderRepeatType.YEARLY);
+    assert.equal(r.title, "kino ko'rish");
+  });
+
+  it('reads the same nested form written with digits', () => {
+    const r = runYearly('har yilning 1-oyining 2-kunida soat 22:20 da kino');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2027, month: 1, day: 2, hour: 22, minute: 20 });
+    assert.equal(r.repeat, ReminderRepeatType.YEARLY);
+  });
+
+  it('keeps the current year when the date has not passed yet', () => {
+    const r = runYearly('har yilning 8-oyining 15-kunida soat 10:00 da bayram');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 8, day: 15, hour: 10, minute: 0 });
+    assert.equal(r.repeat, ReminderRepeatType.YEARLY);
+    assert.equal(r.title, 'bayram');
+  });
+
+  it('reads an Uzbek month name with a day number', () => {
+    const r = runYearly('har yil 2-yanvarda soat 22:20 da kino');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2027, month: 1, day: 2, hour: 22, minute: 20 });
+    assert.equal(r.repeat, ReminderRepeatType.YEARLY);
+    assert.equal(r.title, 'kino');
+  });
+
+  it('reads the Russian "каждый год <day> <month>" form', () => {
+    const r = runYearly('каждый год 2 января в 22:20 смотреть кино');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2027, month: 1, day: 2, hour: 22, minute: 20 });
+    assert.equal(r.repeat, ReminderRepeatType.YEARLY);
+    assert.equal(r.title, 'смотреть кино');
+  });
+
+  it('reads the Russian "<ordinal> <month> каждого года" form', () => {
+    const r = runYearly('второго января каждого года в 22:20 смотреть кино');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2027, month: 1, day: 2, hour: 22, minute: 20 });
+    assert.equal(r.repeat, ReminderRepeatType.YEARLY);
+    assert.equal(r.title, 'смотреть кино');
+  });
+
+  it('reads the English "every year on <month> <day>" form', () => {
+    const r = runYearly('every year on January 2 at 22:20 watch a movie');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2027, month: 1, day: 2, hour: 22, minute: 20 });
+    assert.equal(r.repeat, ReminderRepeatType.YEARLY);
+    assert.equal(r.title, 'watch a movie');
+  });
+
+  it('reads the English "on the Nth of <month> every year" form', () => {
+    const r = runYearly('on the 2nd of January every year at 22:20 watch a movie');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2027, month: 1, day: 2, hour: 22, minute: 20 });
+    assert.equal(r.repeat, ReminderRepeatType.YEARLY);
+    assert.equal(r.title, 'watch a movie');
+  });
+
+  it('reads a two-word Uzbek month ordinal', () => {
+    const r = runYearly("har yilning o'n ikkinchi oyining 25-kuni soat 12:00 da bayram");
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 12, day: 25, hour: 12, minute: 0 });
+    assert.equal(r.repeat, ReminderRepeatType.YEARLY);
+    assert.equal(r.title, 'bayram');
+  });
+
+  it('clamps 29 February to the 28th in a non-leap year', () => {
+    // 2027 is not a leap year, matching luxon's own plus({years:1}) result.
+    const r = runYearly('har yil 29-fevralda soat 10:00 da tekshiruv');
+
+    assert.deepEqual(momentOf(r.remindAt), { year: 2027, month: 2, day: 28, hour: 10, minute: 0 });
+    assert.equal(r.repeat, ReminderRepeatType.YEARLY);
+  });
+});
+
 // The onboarding message advertises these lines as copy-paste ready, so the
 // parser has to actually handle them. Read out of the locales rather than
 // duplicated here, otherwise the test drifts from what users are shown.
