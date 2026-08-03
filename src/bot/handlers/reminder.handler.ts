@@ -1,5 +1,8 @@
 import { Bot, Context, GrammyError, InlineKeyboard } from 'grammy';
 import { findUserByTelegramId } from '../../modules/user/user.service.js';
+import { SUPPORTED_LANGUAGES } from '../../shared/types/translation.js';
+import { sendHelp } from './help.handler.js';
+import { sendLanguageSelector } from './language.handler.js';
 import {
   createReminder,
   getUserReminders,
@@ -15,6 +18,7 @@ import {
   createCancelKeyboard,
   createRemindersKeyboard,
 } from '../../shared/keyboards/reminder.keyboard.js';
+import { createMenuKeyboard } from '../../shared/keyboards/menu.keyboard.js';
 
 const REPEAT_LABEL_KEY: Partial<Record<ReminderRepeatType, keyof Translations['reminder']['repeatLabels']>> = {
   [ReminderRepeatType.DAILY]: 'daily',
@@ -45,41 +49,75 @@ const withTypingIndicator = async <T>(
   }
 };
 
+// Shared by the /list command and the menu button.
+const sendReminderList = async (ctx: Context): Promise<void> => {
+  if (!ctx.from) return;
+
+  const user = await findUserByTelegramId(ctx.from.id);
+
+  if (!user) {
+    const t = getTranslations(ctx.from.language_code);
+    await ctx.reply(t.errors.notRegistered);
+    return;
+  }
+
+  const t = getTranslations(user.language);
+  const reminders = await getUserReminders(user._id);
+
+  if (reminders.length === 0) {
+    await ctx.reply(t.reminder.listEmpty);
+    return;
+  }
+
+  const lines = reminders.map((reminder, index) => {
+    const time = formatReminderTime(reminder.remindAt, user.timezone, user.language ?? 'uz');
+    return t.reminder.listItem(index + 1, reminder.title, time);
+  });
+
+  const text = `${t.reminder.listHeader(reminders.length)}\n\n${lines.join('\n')}`;
+  const keyboard = createRemindersKeyboard(
+    reminders.map((reminder, index) => ({
+      id: reminder._id.toString(),
+      label: `❌ ${index + 1}`,
+    })),
+  );
+
+  await ctx.reply(text, { reply_markup: keyboard });
+};
+
+// Shared by the "new reminder" menu button; the same text is also sent
+// unprompted right after the first language choice.
+const sendHowTo = async (ctx: Context): Promise<void> => {
+  if (!ctx.from) return;
+
+  const user = await findUserByTelegramId(ctx.from.id);
+  const t = getTranslations(user?.language ?? ctx.from.language_code);
+
+  await ctx.reply(t.reminder.howTo);
+};
+
+type MenuAction = (ctx: Context) => Promise<void>;
+
+// A reply keyboard sends its label as an ordinary text message, so those
+// labels must never reach the parser. Every language is registered, not
+// just the user's current one: an old keyboard stays in the chat history
+// after a language switch and its buttons still work.
+const MENU_BUTTON_ACTIONS: ReadonlyMap<string, MenuAction> = new Map(
+  SUPPORTED_LANGUAGES.flatMap((language): Array<[string, MenuAction]> => {
+    const { buttons } = getTranslations(language).menu;
+    return [
+      [buttons.create, sendHowTo],
+      [buttons.list, sendReminderList],
+      [buttons.language, sendLanguageSelector],
+      [buttons.help, sendHelp],
+    ];
+  }),
+);
+
 export const registerReminderHandler = (bot: Bot): void => {
   bot.command('list', async (ctx) => {
-    if (!ctx.from) return;
-
     try {
-      const user = await findUserByTelegramId(ctx.from.id);
-
-      if (!user) {
-        const t = getTranslations(ctx.from.language_code);
-        await ctx.reply(t.errors.notRegistered);
-        return;
-      }
-
-      const t = getTranslations(user.language);
-      const reminders = await getUserReminders(user._id);
-
-      if (reminders.length === 0) {
-        await ctx.reply(t.reminder.listEmpty);
-        return;
-      }
-
-      const lines = reminders.map((reminder, index) => {
-        const time = formatReminderTime(reminder.remindAt, user.timezone, user.language ?? 'uz');
-        return t.reminder.listItem(index + 1, reminder.title, time);
-      });
-
-      const text = `${t.reminder.listHeader(reminders.length)}\n\n${lines.join('\n')}`;
-      const keyboard = createRemindersKeyboard(
-        reminders.map((reminder, index) => ({
-          id: reminder._id.toString(),
-          label: `❌ ${index + 1}`,
-        })),
-      );
-
-      await ctx.reply(text, { reply_markup: keyboard });
+      await sendReminderList(ctx);
     } catch (error) {
       console.error('[Reminder List Error]:', error);
       const t = getTranslations('en');
@@ -142,6 +180,20 @@ export const registerReminderHandler = (bot: Bot): void => {
     }
 
     if (!ctx.from) return;
+
+    // A menu button press arrives as plain text — run its action instead of
+    // saving a reminder titled after the button.
+    const menuAction = MENU_BUTTON_ACTIONS.get(text.trim());
+    if (menuAction) {
+      try {
+        await menuAction(ctx);
+      } catch (error) {
+        console.error('[Menu Button Error]:', error);
+        const t = getTranslations('en');
+        await ctx.reply(t.errors.unknown);
+      }
+      return;
+    }
 
     try {
       const user = await findUserByTelegramId(ctx.from.id);

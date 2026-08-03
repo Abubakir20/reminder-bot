@@ -2,6 +2,7 @@ import { Bot } from 'grammy';
 import { findOrCreateUser } from '../../modules/user/user.service.js';
 import { getTranslations } from '../../locales/index.js';
 import { createLanguageKeyboard } from '../../shared/keyboards/language.keyboard.js';
+import { createMenuKeyboard } from '../../shared/keyboards/menu.keyboard.js';
 
 export const registerStartHandler = (bot: Bot): void => {
   bot.command('start', async (ctx) => {
@@ -45,7 +46,9 @@ export const registerStartHandler = (bot: Bot): void => {
         ? t.start.welcome(displayName) 
         : t.start.welcomeBack(displayName);
 
-      await ctx.reply(welcomeMessage);
+      await ctx.reply(welcomeMessage, {
+        reply_markup: createMenuKeyboard(t.menu.buttons),
+      });
 
     } catch (error) {
       console.error('[Start Handler Error]:', error);

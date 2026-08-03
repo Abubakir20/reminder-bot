@@ -50,6 +50,12 @@ export const getUserReminders = async (
     .limit(10);
 };
 
+// Counts every reminder ever created, whatever its status — used to tell a
+// genuinely new user from one who created and then cancelled something.
+export const countUserReminders = async (userId: Types.ObjectId): Promise<number> => {
+  return ReminderModel.countDocuments({ userId });
+};
+
 export const deleteReminder = async (
   id: string,
 ): Promise<ReminderDocument | null> => {

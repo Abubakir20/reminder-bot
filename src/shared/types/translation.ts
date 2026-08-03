@@ -6,6 +6,7 @@ export interface Translations {
   start: {
     welcome: (name: string) => string;
     welcomeBack: (name: string) => string;
+    notificationHint: string;
   };
 
   language: {
@@ -22,6 +23,21 @@ export interface Translations {
     notRegistered: string;
   };
 
+  menu: {
+    commands: {
+      start: string;
+      list: string;
+      language: string;
+      help: string;
+    };
+    buttons: {
+      create: string;
+      list: string;
+      language: string;
+      help: string;
+    };
+  };
+
   reminder: {
     created: string;
     updated: string;
@@ -30,6 +46,7 @@ export interface Translations {
     needTime: string;
     needDate: string;
     notUnderstood: string;
+    howTo: string;
     ambiguous: (token: string, asTime: string, asDate: string) => string;
     details: (title: string, time: string, leadMinutes: number) => string;
     repeatLabels: {

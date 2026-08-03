@@ -28,6 +28,9 @@ Sizga kerakli narsalarni o'z vaqtida eslatib turaman.
 Yangi eslatmalar yaratishga tayyorman 😊
 
 ℹ️ Barcha buyruqlarni ko'rish uchun /help ni yuboring.`,
+
+    notificationHint:
+      "🔔 Eslatmalar xabar sifatida keladi, shuning uchun bu chat uchun Telegram bildirishnomalarini o'chirmang — chatlar ro'yxatida uni bosib turing va ovoz o'chirilmaganini tekshiring.",
   },
 
   language: {
@@ -39,13 +42,29 @@ Yangi eslatmalar yaratishga tayyorman 😊
     message: `📚 Buyruqlar
 
 /start - Botni ishga tushirish
-/help - Yordam
-/language - Tilni o'zgartirish`,
+/list - Eslatmalarim
+/language - Tilni o'zgartirish
+/help - Yordam`,
   },
 
   errors: {
     unknown: "❌ Xatolik yuz berdi. Keyinroq qayta urinib ko'ring.",
     notRegistered: "⚠️ Avval ro'yxatdan o'tish uchun /start yuboring.",
+  },
+
+  menu: {
+    commands: {
+      start: "Botni ishga tushirish",
+      list: "Eslatmalarim",
+      language: "Tilni o'zgartirish",
+      help: "Yordam",
+    },
+    buttons: {
+      create: "➕ Yangi eslatma",
+      list: "📋 Eslatmalarim",
+      language: "🌐 Til",
+      help: "❓ Yordam",
+    },
   },
 
   reminder: {
@@ -56,6 +75,11 @@ Yangi eslatmalar yaratishga tayyorman 😊
     needTime: "🕐 Iltimos, vaqtni ko'rsating, masalan: \"ertaga 18:00\" yoki \"2 soatdan keyin\".",
     needDate: "🗓 Vaqtni tushundim, lekin sanani tushunmadim. Masalan: \"9-avgust\", \"01.08\" yoki \"ertaga\" deb yozing.",
     notUnderstood: "🤔 Tushunmadim. Masalan: \"ertaga 18:00 da dori ichish\" deb yozing.",
+    howTo: `✍️ Nima haqida va qachon eslatishni yozing. Masalan:
+
+ertaga 18:00 da dori olish
+2 soatdan keyin onamga telefon qilish
+har kuni 8:00 da suv ichish`,
     ambiguous: (token: string, asTime: string, asDate: string) =>
       `🤔 "${token}" vaqtmi yoki sanami, tushunmadim. ${asTime} (vaqt) yoki ${asDate} (sana) nazarda tutgandingizmi?`,
     details: (title: string, time: string, leadMinutes: number) =>

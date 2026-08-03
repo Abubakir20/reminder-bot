@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { DateTime } from 'luxon';
 import { parse } from '../src/modules/parser/parser.service.js';
 import { ReminderRepeatType } from '../src/modules/reminder/reminder.types.js';
+import { getTranslations } from '../src/locales/index.js';
+import { SUPPORTED_LANGUAGES } from '../src/shared/types/translation.js';
 
 const NOW = new Date('2026-07-30T16:15:00+05:00');
 const TZ = 'Asia/Tashkent';
@@ -243,6 +245,40 @@ describe('parser: rolling a bare time to the next day', () => {
 
     assert.deepEqual(momentOf(r.remindAt), { year: 2026, month: 7, day: 30, hour: 23, minute: 0 });
   });
+});
+
+// The onboarding message advertises these lines as copy-paste ready, so the
+// parser has to actually handle them. Read out of the locales rather than
+// duplicated here, otherwise the test drifts from what users are shown.
+const howToExamples = (language: (typeof SUPPORTED_LANGUAGES)[number]): string[] => {
+  const [, ...rest] = getTranslations(language).reminder.howTo.split('\n');
+  return rest.map((line) => line.trim()).filter((line) => line.length > 0);
+};
+
+describe('parser: every advertised howTo example works', () => {
+  for (const language of SUPPORTED_LANGUAGES) {
+    it(`parses all ${language} examples into a usable reminder`, () => {
+      const examples = howToExamples(language);
+
+      // Guards against a formatting change silently emptying the list and
+      // turning this suite into a no-op.
+      assert.ok(examples.length > 0, `no examples found in ${language} howTo`);
+
+      for (const example of examples) {
+        const r = run(example);
+        const hasSchedule = r.remindAt !== undefined || r.repeat !== ReminderRepeatType.NONE;
+
+        assert.ok(
+          r.confidence >= 0.7,
+          `${language}: ${JSON.stringify(example)} parsed with confidence ${r.confidence}`,
+        );
+        assert.ok(
+          hasSchedule,
+          `${language}: ${JSON.stringify(example)} produced neither remindAt nor a repeat`,
+        );
+      }
+    });
+  }
 });
 
 describe('parser: nothing recognisable', () => {

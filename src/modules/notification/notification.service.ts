@@ -33,5 +33,8 @@ export const sendReminderNotification = async (
       break;
   }
 
-  await sender.sendMessage(params.telegramId, text);
+  // Explicitly ask for a sound so we never mute a reminder ourselves. This
+  // does not override the user's own settings: if they muted the bot, the
+  // message still arrives silently and Telegram gives no way around that.
+  await sender.sendMessage(params.telegramId, text, { disable_notification: false });
 };

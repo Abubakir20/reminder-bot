@@ -28,6 +28,9 @@ I will remind you about your important tasks on time.
 Ready to create new reminders? 😊
 
 ℹ️ Type /help to see all commands.`,
+
+    notificationHint:
+      "🔔 Reminders arrive as messages, so keep Telegram notifications on for this chat — press and hold the chat in your list and check that it isn't muted.",
   },
 
   language: {
@@ -39,13 +42,29 @@ Ready to create new reminders? 😊
     message: `📚 Commands
 
 /start - Start the bot
-/help - Help
-/language - Change language`,
+/list - My reminders
+/language - Change language
+/help - Help`,
   },
 
   errors: {
     unknown: "❌ Something went wrong. Please try again later.",
     notRegistered: "⚠️ Please send /start first to register.",
+  },
+
+  menu: {
+    commands: {
+      start: "Start the bot",
+      list: "My reminders",
+      language: "Change language",
+      help: "Help",
+    },
+    buttons: {
+      create: "➕ New reminder",
+      list: "📋 My reminders",
+      language: "🌐 Language",
+      help: "❓ Help",
+    },
   },
 
   reminder: {
@@ -56,6 +75,11 @@ Ready to create new reminders? 😊
     needTime: "🕐 Please specify a time, e.g. \"tomorrow 18:00\" or \"in 2 hours\".",
     needDate: "🗓 I got the time, but not the date. Try formats like \"9th August\", \"01.08\", or \"tomorrow\".",
     notUnderstood: "🤔 I didn't understand that. Try something like \"tomorrow 18:00 buy medicine\".",
+    howTo: `✍️ Just write what to remind you about and when. For example:
+
+tomorrow at 10:00 call the doctor
+in 2 hours call mom
+every month at 09:00 pay bills`,
     ambiguous: (token: string, asTime: string, asDate: string) =>
       `🤔 Not sure if "${token}" is a time or a date. Did you mean ${asTime} (time) or ${asDate} (date)?`,
     details: (title: string, time: string, leadMinutes: number) =>
